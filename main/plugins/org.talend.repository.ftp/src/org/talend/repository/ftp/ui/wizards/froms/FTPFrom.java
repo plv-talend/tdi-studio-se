@@ -58,6 +58,10 @@ public class FTPFrom extends AbstractForm {
 
     private LabelledText proxyHostText;
 
+    private LabelledText privatekeyText;
+
+    private LabelledText passphraseText;
+
     private LabelledText keyFileText;
 
     private LabelledText keyPasswordText;
@@ -109,6 +113,7 @@ public class FTPFrom extends AbstractForm {
      * @see org.talend.repository.ui.swt.utils.AbstractForm#adaptFormToReadOnly()
      */
 
+    @Override
     protected void adaptFormToReadOnly() {
         // TODO Auto-generated method stub
 
@@ -120,6 +125,7 @@ public class FTPFrom extends AbstractForm {
      * @see org.talend.repository.ui.swt.utils.AbstractForm#addFields()
      */
 
+    @Override
     protected void addFields() {
         Group ftpParameterGroup = new Group(this, SWT.NULL);
         ftpParameterGroup.setText("Server"); //$NON-NLS-1$
@@ -191,8 +197,14 @@ public class FTPFrom extends AbstractForm {
         List<String> list = new ArrayList<String>();
         list.add("Public key"); //$NON-NLS-1$
         list.add("Password"); //$NON-NLS-1$
+
         methodCombo = new LabelledCombo(sftpCom, Messages.getString("FTPFrom_authen_method"), "", list); //$NON-NLS-1$ //$NON-NLS-2$
         methodCombo.setVisible(false);
+
+        privatekeyText = new LabelledText(sftpCom, "Private key", true); //$NON-NLS-1$
+        passphraseText = new LabelledText(sftpCom, "Key Passphrase", true); //$NON-NLS-1$
+        privatekeyText.setVisible(false);
+        passphraseText.setVisible(false);
 
         keyFileText = new LabelledText(sftpCom, "Keystore File", true); //$NON-NLS-1$
         keyPasswordText = new LabelledText(sftpCom, "Keystore Password", true); //$NON-NLS-1$
@@ -229,9 +241,11 @@ public class FTPFrom extends AbstractForm {
      * @see org.talend.repository.ui.swt.utils.AbstractForm#addFieldsListeners()
      */
 
+    @Override
     protected void addFieldsListeners() {
         ftpUsernameText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setUsername(ftpUsernameText.getText());
                 checkFieldsValue();
@@ -240,6 +254,7 @@ public class FTPFrom extends AbstractForm {
 
         ftpPasswordText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setPassword(ftpPasswordText.getText());
                 checkFieldsValue();
@@ -247,6 +262,7 @@ public class FTPFrom extends AbstractForm {
         });
         ftpPortText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setPort(ftpPortText.getText());
                 checkFieldsValue();
@@ -254,6 +270,7 @@ public class FTPFrom extends AbstractForm {
         });
         ftpHostText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setHost(ftpHostText.getText());
                 checkFieldsValue();
@@ -261,48 +278,56 @@ public class FTPFrom extends AbstractForm {
         });
         proxyUsernameText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setProxyuser(proxyUsernameText.getText());
             }
         });
         proxyPasswordText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setProxypassword(proxyPasswordText.getText());
             }
         });
         proxyPortText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setProxyport(proxyPortText.getText());
             }
         });
         proxyHostText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setProxyhost(proxyHostText.getText());
             }
         });
         keyFileText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setKeystoreFile(keyFileText.getText());
             }
         });
         keyPasswordText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setKeystorePassword(keyPasswordText.getText());
             }
         });
         connModelCombo.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setMode(connModelCombo.getText());
             }
         });
         encodeCombo.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setEcoding(encodeCombo.getText());
                 if (getConnection().getEcoding().equals("CUSTOM")) { //$NON-NLS-1$
@@ -318,6 +343,7 @@ public class FTPFrom extends AbstractForm {
 
         customText.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setCustomEncode(customText.getText());
             }
@@ -325,8 +351,23 @@ public class FTPFrom extends AbstractForm {
 
         methodCombo.addModifyListener(new ModifyListener() {
 
+            @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setMethod(methodCombo.getText());
+                if (getConnection().getMethod().equals("Public key")) { //$NON-NLS-1$
+                    privatekeyText.setVisible(true);
+                    passphraseText.setVisible(true);
+                    privatekeyText.setText(getConnection().getPrivatekey() != null ? getConnection().getPrivatekey() : "");
+                    passphraseText.setText(getConnection().getPassphrase() != null ? getConnection().getPassphrase() : ""); //$NON-NLS-1$
+                    getConnection().setPrivatekey(privatekeyText.getText());
+                    getConnection().setPassphrase(passphraseText.getText());
+                } else {
+                    getConnection().setPrivatekey(getConnection().getPrivatekey());
+                    getConnection().setPassphrase(getConnection().getPassphrase());
+                    privatekeyText.setVisible(false);
+                    passphraseText.setVisible(false);
+                }
+                checkFieldsValue();
             }
         });
 
@@ -338,6 +379,7 @@ public class FTPFrom extends AbstractForm {
      * @see org.talend.repository.ui.swt.utils.AbstractForm#addUtilsButtonListeners()
      */
 
+    @Override
     protected void addUtilsButtonListeners() {
         sftpSuppBut.addSelectionListener(new SelectionAdapter() {
 
@@ -347,12 +389,18 @@ public class FTPFrom extends AbstractForm {
              * @see org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse.swt.events.SelectionEvent)
              */
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 boolean show = sftpSuppBut.getSelection();
                 ftpsSuppBut.setVisible(!show);
+                if ("Public key".equals(methodCombo.getText())) {
+                    privatekeyText.setVisible(show);
+                    passphraseText.setVisible(show);
+                }
                 methodCombo.setVisible(show);
                 connModelCombo.setVisible(!show);
                 getConnection().setSFTP(show);
+                checkFieldsValue();
             }
 
         });
@@ -365,6 +413,7 @@ public class FTPFrom extends AbstractForm {
              * @see org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse.swt.events.SelectionEvent)
              */
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 boolean show = ftpsSuppBut.getSelection();
                 sftpSuppBut.setVisible(!show);
@@ -384,6 +433,7 @@ public class FTPFrom extends AbstractForm {
              * @see org.eclipse.swt.events.SelectionAdapter#widgetSelected(org.eclipse.swt.events.SelectionEvent)
              */
 
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 boolean show = useSocksBut.getSelection();
                 proxyHostText.setVisible(show);
@@ -402,6 +452,7 @@ public class FTPFrom extends AbstractForm {
      * @see org.talend.repository.ui.swt.utils.AbstractForm#checkFieldsValue()
      */
 
+    @Override
     public boolean checkFieldsValue() {
         if (ftpHostText.getCharCount() == 0) {
             updateStatus(IStatus.ERROR, "Host can not be null!"); //$NON-NLS-1$
@@ -418,9 +469,12 @@ public class FTPFrom extends AbstractForm {
             return false;
         }
 
-        if (ftpPasswordText.getCharCount() == 0) {
-            updateStatus(IStatus.ERROR, "Password can not be null!"); //$NON-NLS-1$
-            return false;
+        // only check the Password model
+        if (sftpSuppBut.getSelection() && methodCombo != null && "Password".equals(methodCombo.getText())) {
+            if (ftpPasswordText.getCharCount() == 0) {
+                updateStatus(IStatus.ERROR, "Password can not be null!"); //$NON-NLS-1$
+                return false;
+            }
         }
         updateStatus(IStatus.OK, null);
         return true;
@@ -432,6 +486,7 @@ public class FTPFrom extends AbstractForm {
      * @see org.talend.repository.ui.swt.utils.AbstractForm#initialize()
      */
 
+    @Override
     protected void initialize() {
         ftpUsernameText.setText(getConnection().getUsername());
         ftpPasswordText.setText(getConnection().getPassword());
@@ -455,6 +510,12 @@ public class FTPFrom extends AbstractForm {
             connModelCombo.setVisible(false);
             sftpSuppBut.setSelection(getConnection().isSFTP());
             methodCombo.setText(getConnection().getMethod());
+            if (getConnection().getMethod().equals("Public key")) { //$NON-NLS-1$
+                privatekeyText.setVisible(true);
+                passphraseText.setVisible(true);
+                privatekeyText.setText(getConnection().getPrivatekey() != null ? getConnection().getPrivatekey() : "");
+                passphraseText.setText(getConnection().getPassphrase() != null ? getConnection().getPassphrase() : ""); //$NON-NLS-1$
+            }
         }
         if (getConnection().isFTPS()) {
             keyFileText.setVisible(true);
@@ -524,6 +585,7 @@ public class FTPFrom extends AbstractForm {
         return (FTPConnection) connectionItem.getConnection();
     }
 
+    @Override
     public void setVisible(boolean visible) {
         super.setVisible(visible);
         checkFieldsValue();
