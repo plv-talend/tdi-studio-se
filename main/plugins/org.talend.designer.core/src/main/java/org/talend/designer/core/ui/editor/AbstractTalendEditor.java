@@ -173,6 +173,7 @@ import org.talend.designer.core.ui.editor.cmd.ConnectionCreateCommand;
 import org.talend.designer.core.ui.editor.cmd.ConnectionReconnectCommand;
 import org.talend.designer.core.ui.editor.cmd.CreateNodeContainerCommand;
 import org.talend.designer.core.ui.editor.cmd.MoveNodeCommand;
+import org.talend.designer.core.ui.editor.connections.ConnLabelEditPart;
 import org.talend.designer.core.ui.editor.connections.Connection;
 import org.talend.designer.core.ui.editor.connections.ConnectionPart;
 import org.talend.designer.core.ui.editor.jobletcontainer.JobletContainer;
@@ -572,7 +573,8 @@ public abstract class AbstractTalendEditor extends GraphicalEditorWithFlyoutPale
             IStructuredSelection selection = (IStructuredSelection) getViewer().getSelection();
 
             if (selection.size() == 1
-                    && (selection.getFirstElement() instanceof NodePart || selection.getFirstElement() instanceof ConnectionPart)) {
+                    && (selection.getFirstElement() instanceof NodePart || selection.getFirstElement() instanceof ConnectionPart
+                            || selection.getFirstElement() instanceof SubjobContainerPart || selection.getFirstElement() instanceof ConnLabelEditPart)) {
 
                 viewer.setElement((Element) ((AbstractEditPart) selection.getFirstElement()).getModel());
 
