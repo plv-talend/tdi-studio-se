@@ -146,7 +146,7 @@ public class ConnectionManager {
         }
         connections = (List<Connection>) target.getIncomingConnections();
         for (int i = 0; i < connections.size(); i++) {
-            if (connType.equals(EConnectionType.TABLE)) {
+            if (connType == EConnectionType.TABLE || connType == EConnectionType.TABLE_REF) {
                 if ((connections.get(i)).isActivate()) {
                     if ((connections.get(i)).getName().equals(connectionName)) {
                         return false;
@@ -273,7 +273,7 @@ public class ConnectionManager {
         }
         connections = (List<Connection>) target.getIncomingConnections();
         for (int i = 0; i < connections.size(); i++) {
-            if (connType.equals(EConnectionType.TABLE)) {
+            if (connType == EConnectionType.TABLE || connType == EConnectionType.TABLE_REF) {
                 if ((connections.get(i)).isActivate()) {
                     if ((connections.get(i)).getName().equals(connectionName)) {
                         return false;
@@ -470,11 +470,14 @@ public class ConnectionManager {
         }
 
         // to avoid different db elt input link to map.
-        if (newTarget.isELTComponent() && newTarget.getComponent().getName().endsWith("Map")) {
+        if (newTarget.isELTComponent() && newTarget.getComponent().getName().endsWith("Map")) { //$NON-NLS-1$
             String targetName = newTarget.getComponent().getOriginalFamilyName();
             String sourceName = processStartNode.getComponent().getOriginalFamilyName();
             if (!targetName.equals(sourceName) && !(lineStyle.hasConnectionCategory(IConnectionCategory.DEPENDENCY))) {
                 return false;
+            }
+            if (source.isELTComponent() && source.getComponent().getName().endsWith("Map")) { //$NON-NLS-1$
+                newlineStyle = EConnectionType.TABLE_REF;
             }
         }
 
@@ -490,25 +493,25 @@ public class ConnectionManager {
         }
 
         // TDI-25765 : avoid any connection for components not accepting PIG
-        if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && "PIGCOMBINE".equals(connectorName)) {
-            if (!newTarget.getComponent().getName().startsWith("tPig")) {
+        if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && "PIGCOMBINE".equals(connectorName)) { //$NON-NLS-1$
+            if (!newTarget.getComponent().getName().startsWith("tPig")) { //$NON-NLS-1$
                 return false;
             }
         }
-        if (newTarget.getComponent() != null && newTarget.getComponent().getName().startsWith("tPig")) {
-            if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && !"PIGCOMBINE".equals(connectorName)) {
+        if (newTarget.getComponent() != null && newTarget.getComponent().getName().startsWith("tPig")) { //$NON-NLS-1$
+            if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && !"PIGCOMBINE".equals(connectorName)) { //$NON-NLS-1$
                 return false;
             }
         }
 
         // TDI-29775 : avoid any connection for components not accepting SPARK
-        if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && "SPARKCOMBINE".equals(connectorName)) {
-            if (!newTarget.getComponent().getName().startsWith("tSpark")) {
+        if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && "SPARKCOMBINE".equals(connectorName)) { //$NON-NLS-1$
+            if (!newTarget.getComponent().getName().startsWith("tSpark")) { //$NON-NLS-1$
                 return false;
             }
         }
-        if (newTarget.getComponent() != null && newTarget.getComponent().getName().startsWith("tSpark")) {
-            if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && !"SPARKCOMBINE".equals(connectorName)) {
+        if (newTarget.getComponent() != null && newTarget.getComponent().getName().startsWith("tSpark")) { //$NON-NLS-1$
+            if (newlineStyle.hasConnectionCategory(IConnectionCategory.FLOW) && !"SPARKCOMBINE".equals(connectorName)) { //$NON-NLS-1$
                 return false;
             }
         }
@@ -621,7 +624,7 @@ public class ConnectionManager {
         }
 
         // to avoid different db elt input link to map.
-        if (newTarget.isELTComponent() && newTarget.getComponent().getName().endsWith("Map")) {
+        if (newTarget.isELTComponent() && newTarget.getComponent().getName().endsWith("Map")) { //$NON-NLS-1$
             String targetName = newTarget.getComponent().getOriginalFamilyName();
             String sourceName = processStartNode.getComponent().getOriginalFamilyName();
             if (!targetName.equals(sourceName) && !(lineStyle.hasConnectionCategory(IConnectionCategory.DEPENDENCY))) {
@@ -737,7 +740,7 @@ public class ConnectionManager {
                     || "ErrorReject".equals(connectionName) || "context".equals(connectionName)) {
                 canRename = false;
             }
-        } else if (connType.equals(EConnectionType.TABLE)) {
+        } else if (connType == EConnectionType.TABLE || connType == EConnectionType.TABLE_REF) {
             if (connectionName.equals("")) { //$NON-NLS-1$
                 canRename = false;
             } else {

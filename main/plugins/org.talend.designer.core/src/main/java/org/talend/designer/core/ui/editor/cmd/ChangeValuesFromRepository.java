@@ -634,7 +634,8 @@ public class ChangeValuesFromRepository extends ChangeMetadataCommand {
             Node node = (Node) elem;
             if (node.getCurrentActiveLinksNbInput(EConnectionType.FLOW_MAIN) > 0
                     || node.getCurrentActiveLinksNbInput(EConnectionType.FLOW_REF) > 0
-                    || node.getCurrentActiveLinksNbInput(EConnectionType.TABLE) > 0) {
+                    || node.getCurrentActiveLinksNbInput(EConnectionType.TABLE) > 0
+                    || node.getCurrentActiveLinksNbInput(EConnectionType.TABLE_REF) > 0) {
                 metadataInput = true;
             }
 

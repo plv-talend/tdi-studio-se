@@ -176,6 +176,11 @@ public class MapperMain {
 
     public void createModelFromExternalData(IODataComponentContainer ioDataContainer, List<IMetadataTable> outputMetadataTables,
             ExternalDbMapData externalData, boolean checkProblems) {
+        initIOConnections(ioDataContainer);
+        createModelFromExternalData(ioInputConnections, ioOutputConnections, outputMetadataTables, externalData, false);
+    }
+
+    public void initIOConnections(IODataComponentContainer ioDataContainer) {
         List<IODataComponent> inputsData = ioDataContainer.getInputs();
         List<IODataComponent> ouputsData = ioDataContainer.getOuputs();
 
@@ -187,7 +192,6 @@ public class MapperMain {
         for (IODataComponent oData : ouputsData) {
             ioOutputConnections.add(new IOConnection(oData));
         }
-        createModelFromExternalData(ioInputConnections, ioOutputConnections, outputMetadataTables, externalData, false);
     }
 
     public void createModelFromExternalData(List<IOConnection> inputs, List<IOConnection> outputs,

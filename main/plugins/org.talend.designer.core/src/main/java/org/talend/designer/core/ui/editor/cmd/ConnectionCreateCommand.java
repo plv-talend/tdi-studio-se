@@ -252,7 +252,9 @@ public class ConnectionCreateCommand extends Command {
                 return false;
             }
             newLineStyle = ConnectionManager.getNewConnectionType();
-
+            if (newLineStyle == EConnectionType.TABLE_REF) {
+                connectorName = newLineStyle.getName();
+            }
         }
         creatingConnection = true;
         return true;
@@ -287,10 +289,10 @@ public class ConnectionCreateCommand extends Command {
             } else if (ComponentCategory.CATEGORY_4_CAMEL.getName().equals(source.getComponent().getType())) {
                 connecType = EConnectionType.ROUTE;
                 if (GlobalServiceRegister.getDefault().isServiceRegistered(ICamelDesignerCoreService.class)) {
-                    ICamelDesignerCoreService camelService = (ICamelDesignerCoreService) GlobalServiceRegister.getDefault().getService(
-                            ICamelDesignerCoreService.class);
+                    ICamelDesignerCoreService camelService = (ICamelDesignerCoreService) GlobalServiceRegister.getDefault()
+                            .getService(ICamelDesignerCoreService.class);
                     connecType = camelService.getTargetConnectionType(source);
-                }else{
+                } else {
                     connecType = EConnectionType.ROUTE;
                 }
             } else {
@@ -353,8 +355,9 @@ public class ConnectionCreateCommand extends Command {
                     } else {
                         connectionName = askForConnectionName(source.getLabel(), connectionName);
                     }
-                } else if(ComponentCategory.CATEGORY_4_CAMEL.getName().equals(source.getComponent().getType())){
-                    connectionName = ConnectionUtil.generateUniqueConnectionName(connecType, source.getProcess(), source.getConnectorFromType(connecType));
+                } else if (ComponentCategory.CATEGORY_4_CAMEL.getName().equals(source.getComponent().getType())) {
+                    connectionName = ConnectionUtil.generateUniqueConnectionName(connecType, source.getProcess(),
+                            source.getConnectorFromType(connecType));
                 } else {
                     IMetadataTable metaTable = source.getMetadataFromConnector(mainConnector.getName());
                     if (metaTable != null) {
@@ -391,9 +394,12 @@ public class ConnectionCreateCommand extends Command {
                         monitorConnection);
             }
         } else { // in case of redo, reuse the same instance
-            if (newMetadata != null) {
-                source.getMetadataList().add(newMetadata);
-            }
+            /**
+             * this resume has been moved to the Connection.reconnect(...), please see TDI-29941
+             */
+            // if (newMetadata != null) {
+            // source.getMetadataList().add(newMetadata);
+            // }
             connection.reconnect(source, target, newLineStyle);
         }
         INodeConnector nodeConnectorSource, nodeConnectorTarget;

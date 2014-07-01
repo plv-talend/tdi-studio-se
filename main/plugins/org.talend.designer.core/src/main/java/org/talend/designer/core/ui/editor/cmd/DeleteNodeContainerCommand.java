@@ -18,7 +18,6 @@ import java.util.List;
 import org.eclipse.gef.commands.Command;
 import org.talend.core.CorePlugin;
 import org.talend.core.model.metadata.IMetadataTable;
-import org.talend.core.model.process.AbstractNode;
 import org.talend.core.model.process.EConnectionType;
 import org.talend.core.model.process.IConnection;
 import org.talend.core.model.process.IConnectionCategory;
@@ -84,8 +83,9 @@ public class DeleteNodeContainerCommand extends Command {
                         boolean builtInJobletNode = jobletnode.getConnectorFromType(EConnectionType.FLOW_MAIN).isMultiSchema()
                                 | node.getConnectorFromType(EConnectionType.TABLE).isMultiSchema();
                         jobletnode.removeOutput(connection);
-                        if (!builtInJobletNode)
+                        if (!builtInJobletNode) {
                             process.removeUniqueConnectionName(connection.getUniqueName());
+                        }
                     }
                 }
                 if (!nodeList.contains(prevNode)) {
@@ -93,8 +93,9 @@ public class DeleteNodeContainerCommand extends Command {
                             | node.getConnectorFromType(EConnectionType.TABLE).isMultiSchema();
 
                     prevNode.removeOutput(connection);
-                    if (!builtInPrevNode)
+                    if (!builtInPrevNode) {
                         process.removeUniqueConnectionName(connection.getUniqueName());
+                    }
                 }
             }
             for (IConnection connection : outputList) {
@@ -106,8 +107,9 @@ public class DeleteNodeContainerCommand extends Command {
                         jobletnode.removeInput(connection);
                         boolean builtInJobletNode = jobletnode.getConnectorFromType(EConnectionType.FLOW_MAIN).isMultiSchema()
                                 | node.getConnectorFromType(EConnectionType.TABLE).isMultiSchema();
-                        if (!builtInJobletNode)
+                        if (!builtInJobletNode) {
                             process.removeUniqueConnectionName(connection.getUniqueName());
+                        }
                     }
                 }
                 if (!nodeList.contains(nextNode)) {
@@ -120,8 +122,13 @@ public class DeleteNodeContainerCommand extends Command {
                             nextNodeConnection.updateName();
                         }
                     }
-                    if (nextNode.getExternalNode() instanceof AbstractNode) {
-                        ((AbstractNode) nextNode.getExternalNode()).removeInput(connection);
+                    {
+                        /**
+                         * Those codes have been moved to Node.removeInput(IConnection)
+                         */
+                        // if (nextNode.getExternalNode() instanceof AbstractNode) {
+                        // ((AbstractNode) nextNode.getExternalNode()).removeInput(connection);
+                        // }
                     }
                 }
                 if (!builtIn) {

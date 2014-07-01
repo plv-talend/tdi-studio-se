@@ -96,7 +96,7 @@ public class ConnectionCreateAction extends SelectionAction {
      * 
      * @return true/false
      */
-    @SuppressWarnings("unchecked")//$NON-NLS-1$
+    @SuppressWarnings("unchecked")
     private boolean canPerformAction() {
         if (getSelectedObjects().isEmpty()) {
             return false;
@@ -152,6 +152,16 @@ public class ConnectionCreateAction extends SelectionAction {
                 return false;
             }
 
+            /**
+             * judge whether to show the table link menu in ELTMap components
+             */
+            if (curNodeConnector.getName().equals(EConnectionType.TABLE.getName())) {
+                Object reference = node.getPropertyValue(EParameterName.REFERENCE.getName());
+                if (reference != null && Boolean.valueOf(reference.toString())) {
+                    return false;
+                }
+            }
+
             if (!curNodeConnector.isMultiSchema()) {
                 // setText(curNodeConnector.getMenuName());
             }
@@ -164,7 +174,7 @@ public class ConnectionCreateAction extends SelectionAction {
                         continue;
                     }
                     if (table.getAttachedConnector() == null || table.getAttachedConnector().equals(curNodeConnector.getName())) {
-                        if (connecType.equals(EConnectionType.TABLE)) {
+                        if (connecType == EConnectionType.TABLE) {
                             name = table.getLabel() + " (" + name + ")"; //$NON-NLS-1$ //$NON-NLS-2$
                         }
                         boolean nameUsed = false;
@@ -203,7 +213,7 @@ public class ConnectionCreateAction extends SelectionAction {
                         && curNodeConnector.getCurLinkNbOutput() > 0) {
                     return false;
                 }
-                if (connecType.equals(EConnectionType.TABLE)) {
+                if (connecType == EConnectionType.TABLE) {
                     addDefaultName = addDefaultName();
                     menuName = getNewOutputMenuName();
                 } else {
@@ -437,6 +447,7 @@ public class ConnectionCreateAction extends SelectionAction {
                 + Messages.getString("ConnectionCreateAction.dialogTitle"), //$NON-NLS-1$
                 Messages.getString("ConnectionCreateAction.dialogMessage"), oldName, new IInputValidator() { //$NON-NLS-1$
 
+                    @Override
                     public String isValid(String newText) {
                         if (newText != null) {
                             if (!node.getProcess().checkValidConnectionName(newText, isListenerAttached())
@@ -449,7 +460,7 @@ public class ConnectionCreateAction extends SelectionAction {
                         }
 
                     }
-                }); //$NON-NLS-1$ //$NON-NLS-2$
+                });
         id.open();
         if (id.getReturnCode() == InputDialog.CANCEL) {
             return ""; //$NON-NLS-1$
@@ -576,7 +587,7 @@ public class ConnectionCreateAction extends SelectionAction {
             } else {
                 String tableName;
                 // int tableId = -1;
-                if (connecType.equals(EConnectionType.TABLE)) {
+                if (connecType == EConnectionType.TABLE) {
                     int end = getText().length() - 1;
                     int start = getText().lastIndexOf("(") + 1; //$NON-NLS-1$
                     tableName = getText().substring(start, end);
@@ -604,10 +615,10 @@ public class ConnectionCreateAction extends SelectionAction {
                 meta.setAttachedConnector(curNodeConnector.getName());
             }
         } else {
-            if (connecType.equals(EConnectionType.TABLE)) {
+            if (connecType == EConnectionType.TABLE) {
                 if (getText().equals(getDefaultTableName())) {
                     int end = getText().lastIndexOf("(") - 1;//$NON-NLS-1$
-                    int start = 0; //$NON-NLS-1$
+                    int start = 0;
                     if (end >= start) {
                         connectionName = getText().substring(start, end);
                         meta = node.getMetadataList().get(0);
@@ -639,7 +650,7 @@ public class ConnectionCreateAction extends SelectionAction {
             } else {
                 if (connecType.hasConnectionCategory(IConnectionCategory.FLOW)) {
                     connectionName = node.getProcess().generateUniqueConnectionName(Process.DEFAULT_ROW_CONNECTION_NAME);
-                } else if(connecType.hasConnectionCategory(IConnectionCategory.CAMEL)){
+                } else if (connecType.hasConnectionCategory(IConnectionCategory.CAMEL)) {
                     connectionName = ConnectionUtil.generateUniqueConnectionName(connecType, node.getProcess(), curNodeConnector);
                 } else {
                     connectionName = curNodeConnector.getLinkName();
@@ -713,10 +724,12 @@ public class ConnectionCreateAction extends SelectionAction {
         listArgs.add(newMetadata);
         TalendConnectionCreationTool myConnectTool = new TalendConnectionCreationTool(new CreationFactory() {
 
+            @Override
             public Object getNewObject() {
                 return listArgs;
             }
 
+            @Override
             public Object getObjectType() {
                 return curNodeConnector.getName();
             }

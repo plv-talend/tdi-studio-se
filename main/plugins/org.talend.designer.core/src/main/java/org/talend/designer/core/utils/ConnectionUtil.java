@@ -2,6 +2,7 @@ package org.talend.designer.core.utils;
 
 import org.talend.core.model.process.EConnectionType;
 import org.talend.core.model.process.IConnection;
+import org.talend.core.model.process.IConnectionCategory;
 import org.talend.core.model.process.INode;
 import org.talend.core.model.process.INodeConnector;
 import org.talend.core.model.process.IProcess;
@@ -13,7 +14,7 @@ public class ConnectionUtil {
     public static String generateUniqueConnectionName(EConnectionType connectType, IProcess process) {
         if (connectType.hasConnectionCategory(EConnectionType.FLOW)) {
             return process.generateUniqueConnectionName(Process.DEFAULT_ROW_CONNECTION_NAME);
-        } else if (connectType.equals(EConnectionType.TABLE)) {
+        } else if (connectType.hasConnectionCategory(IConnectionCategory.TABLE)) {
             return process.generateUniqueConnectionName(Process.DEFAULT_TABLE_CONNECTION_NAME);
         } else if (connectType.equals(EConnectionType.ITERATE)) {
             return process.generateUniqueConnectionName(Process.DEFAULT_ITERATE_CONNECTION_NAME);

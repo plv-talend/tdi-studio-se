@@ -55,12 +55,14 @@ public class ChangeConnTextCommand extends Command {
         setLabel(Messages.getString("ChangeConnTextCommand.Label")); //$NON-NLS-1$
     }
 
+    @Override
     public void execute() {
         oldName = connection.getName();
         connection.setName(newName);
         IElementParameter elementParameter = connection.getElementParameter(EParameterName.UNIQUE_NAME.getName());
         if (elementParameter != null) {
-            if ("TABLE".equals(connection.getConnectorName())) {
+            // if ("TABLE".equals(connection.getConnectorName())) {
+            if (connection.getLineStyle().hasConnectionCategory(IConnectionCategory.TABLE)) {
                 oldMetaName = connection.getMetaName();
                 connection.setPropertyValue(EParameterName.UNIQUE_NAME.getName(), connection.getMetaName());
             } else {
@@ -86,15 +88,18 @@ public class ChangeConnTextCommand extends Command {
         ((Process) connection.getSource().getProcess()).checkProcess();
     }
 
+    @Override
     public void redo() {
         execute();
     }
 
+    @Override
     public void undo() {
         connection.setName(oldName);
         IElementParameter elementParameter = connection.getElementParameter(EParameterName.UNIQUE_NAME.getName());
         if (elementParameter != null) {
-            if ("TABLE".equals(connection.getConnectorName())) {
+            // if ("TABLE".equals(connection.getConnectorName())) {
+            if (connection.getLineStyle().hasConnectionCategory(IConnectionCategory.TABLE)) {
                 connection.setPropertyValue(EParameterName.UNIQUE_NAME.getName(), oldMetaName);
             } else {
                 connection.setPropertyValue(EParameterName.UNIQUE_NAME.getName(), oldName);

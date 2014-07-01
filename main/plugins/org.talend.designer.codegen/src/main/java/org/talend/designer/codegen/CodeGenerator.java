@@ -427,9 +427,9 @@ public class CodeGenerator implements ICodeGenerator {
                 designerContext = process.getContextManager().getDefaultContext();
             }
             List<IContextParameter> listParameters = designerContext.getContextParameterList();
-            List<IContextParameter> listParametersCopy = new ArrayList<IContextParameter>(listParameters.size());
 
             if (listParameters != null) {
+                List<IContextParameter> listParametersCopy = new ArrayList<IContextParameter>(listParameters.size());
                 CodeGeneratorArgument codeGenArgument = new CodeGeneratorArgument();
                 // encrypt the password
                 for (IContextParameter iContextParameter : listParameters) {

@@ -101,7 +101,8 @@ public class ExternalDataConverter {
             for (IOConnection connection : outputConnections) {
                 if (connection.getConnectionType().equals(EConnectionType.FLOW_MAIN)
                         || connection.getConnectionType().equals(EConnectionType.FLOW_REF)
-                        || connection.getConnectionType().equals(EConnectionType.TABLE)) {
+                        || connection.getConnectionType().equals(EConnectionType.TABLE)
+                        || connection.getConnectionType().equals(EConnectionType.TABLE_REF)) {
                     nameToOutputConn.put(connection.getUniqueName(), connection);
                 }
             }
@@ -112,14 +113,13 @@ public class ExternalDataConverter {
             OutputTable outputTable = null;
             if (connection != null) {
                 ExternalDbMapTable persistentTable = nameToOutpuPersistentTable.get(connection.getUniqueName());
-                outputTable = new OutputTable(this.mapperManager, table.clone(), connection.getUniqueName(), connection
-                        .getName());
+                outputTable = new OutputTable(this.mapperManager, table.clone(), connection.getUniqueName(), connection.getName());
                 outputTable.initFromExternalData(persistentTable);
             } else {
                 ExternalDbMapTable persistentTable = nameToOutpuPersistentTable.get(table.getTableName());
                 if (persistentTable != null) {
-                    outputTable = new OutputTable(this.mapperManager, table, persistentTable.getName(), persistentTable
-                            .getTableName());
+                    outputTable = new OutputTable(this.mapperManager, table, persistentTable.getName(),
+                            persistentTable.getTableName());
                     outputTable.initFromExternalData(persistentTable);
                 }
             }
@@ -155,8 +155,7 @@ public class ExternalDataConverter {
         } else {
             ArrayList<IOConnection> remainingConnections = new ArrayList<IOConnection>(inputConnections);
             for (ExternalDbMapTable persistentTable : externalData.getInputTables()) {
-                String name = persistentTable.getTableName() != null ? persistentTable.getTableName() : persistentTable
-                        .getName();
+                String name = persistentTable.getTableName() != null ? persistentTable.getTableName() : persistentTable.getName();
                 IOConnection connection = nameToConnection.get(name);
                 if (connection != null) {
                     remainingConnections.remove(connection);
@@ -178,6 +177,7 @@ public class ExternalDataConverter {
         // sort for put table with main connection at top position of the list
         Collections.sort(inputDataMapTables, new Comparator<InputTable>() {
 
+            @Override
             public int compare(InputTable o1, InputTable o2) {
                 if (o1.isMainConnection()) {
                     return -1;

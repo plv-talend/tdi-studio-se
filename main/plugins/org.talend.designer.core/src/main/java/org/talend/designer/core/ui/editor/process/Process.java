@@ -3451,14 +3451,15 @@ public class Process extends Element implements IProcess2, IGEFProcess, ILastVer
             // this one will be reaffected to a new subjob after
             if (node == null || !node.isDesignSubjobStartNode()) {
                 // for bug 13314
-                if (node == null
-                        || !(node.getOutgoingConnections(EConnectionType.TABLE).size() != 0 || node.getIncomingConnections(
-                                EConnectionType.TABLE).size() != 0)) {
-                    elem.addAll(sjc.getNodeContainers());
-                    sjc.getNodeContainers().clear();
-                    elem.remove(sjc);
-                    subjobContainers.remove(sjc);
-                }
+                // if (node == null
+                // || !(node.getOutgoingConnections(EConnectionType.TABLE).size() != 0 || node.getIncomingConnections(
+                // EConnectionType.TABLE).size() != 0)
+                // ) {
+                elem.addAll(sjc.getNodeContainers());
+                sjc.getNodeContainers().clear();
+                elem.remove(sjc);
+                subjobContainers.remove(sjc);
+                // }
                 // subjob are never removed from the map, so if the user do any "undo"
                 // the name of the subjob or configuration will be kept.
             } else {

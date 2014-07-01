@@ -17,7 +17,6 @@ import java.util.List;
 import org.eclipse.gef.commands.Command;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
-import org.talend.core.model.process.AbstractNode;
 import org.talend.core.model.process.INode;
 import org.talend.core.model.process.INodeConnector;
 import org.talend.designer.core.i18n.Messages;
@@ -46,6 +45,7 @@ public class ConnectionDeleteCommand extends Command {
         this.connectionList = connectionList;
     }
 
+    @Override
     public void execute() {
         Process process = (Process) connectionList.get(0).getSource().getProcess();
         for (Connection connection : connectionList) {
@@ -53,11 +53,16 @@ public class ConnectionDeleteCommand extends Command {
             if (re) {
                 return;
             }
-            final INode target = connection.getTarget();
-            if (target.getExternalNode() instanceof AbstractNode) {
-                ((AbstractNode) target.getExternalNode()).removeInput(connection);
-            }
             connection.disconnect();
+            {
+                /**
+                 * Have been moved those codes to Connection.disconnect()/target.removeInput()
+                 */
+                // final INode target = connection.getTarget();
+                // if (target.getExternalNode() instanceof AbstractNode) {
+                // ((AbstractNode) target.getExternalNode()).removeInput(connection);
+                // }
+            }
             INodeConnector nodeConnectorSource, nodeConnectorTarget;
             nodeConnectorSource = connection.getSourceNodeConnector();
             if (nodeConnectorSource != null) {
@@ -70,11 +75,21 @@ public class ConnectionDeleteCommand extends Command {
         process.checkProcess();
     }
 
+    @Override
     public void undo() {
         Process process = (Process) connectionList.get(0).getSource().getProcess();
         for (Connection connection : connectionList) {
             collpseJoblet(connection);
             connection.reconnect();
+            {
+                /**
+                 * Have been moved those codes to Connection.reconnect()
+                 */
+                // INode target = connection.getTarget();
+                // if (target.getExternalNode() instanceof AbstractNode) {
+                // ((AbstractNode) target.getExternalNode()).addInput(connection);
+                // }
+            }
             INodeConnector nodeConnectorSource, nodeConnectorTarget;
             nodeConnectorSource = connection.getSourceNodeConnector();
             if (nodeConnectorSource != null) {

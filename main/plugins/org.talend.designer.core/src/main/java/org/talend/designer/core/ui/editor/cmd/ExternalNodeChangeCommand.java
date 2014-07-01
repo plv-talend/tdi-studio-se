@@ -430,6 +430,7 @@ public class ExternalNodeChangeCommand extends Command {
             nodeConnectorTarget.setCurLinkNbInput(nodeConnectorTarget.getCurLinkNbInput() - 1);
 
             inAndOut.getOuputs().remove(connectionsToDelete.get(connection));
+            ((Process) node.getProcess()).checkStartNodes();
         }
         ((Process) node.getProcess()).checkProcess();
         if (!isMetaLanguage) {
@@ -443,7 +444,8 @@ public class ExternalNodeChangeCommand extends Command {
         for (Connection connection : (List<Connection>) node.getIncomingConnections()) {
             if (connection.getLineStyle().equals(EConnectionType.FLOW_MAIN)
                     || connection.getLineStyle().equals(EConnectionType.FLOW_REF)
-                    || connection.getLineStyle().equals(EConnectionType.TABLE)) {
+                    || connection.getLineStyle().equals(EConnectionType.TABLE)
+                    || connection.getLineStyle().equals(EConnectionType.TABLE_REF)) {
                 IODataComponent currentIO = inAndOut.getDataComponent(connection);
                 if (currentIO.hasChanged()) {
                     // IMetadataTable metadata = inAndOut.getTable(connection);
