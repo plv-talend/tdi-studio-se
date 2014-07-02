@@ -568,7 +568,8 @@ public abstract class AbstractMultiPageTalendEditor extends MultiPageEditorPart 
             if (view != null) {
                 ContextsView contextsView = (ContextsView) view;
                 contextsView.getContextViewComposite().setTabEnable(flag);
-                contextsView.getContextViewComposite().getContextTemplateComposite().getViewer().getTree().setEnabled(flag);
+                contextsView.getContextViewComposite().getContextTableValueComposite().getViewer().getTree().setEnabled(flag);
+                // contextsView.getContextViewComposite().getContextTemplateComposite().getViewer().getTree().setEnabled(flag);
             }
         }
     }
