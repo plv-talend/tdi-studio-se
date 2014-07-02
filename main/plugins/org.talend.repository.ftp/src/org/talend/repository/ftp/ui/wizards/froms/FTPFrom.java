@@ -40,6 +40,14 @@ import org.talend.repository.ui.swt.utils.AbstractForm;
  */
 public class FTPFrom extends AbstractForm {
 
+    private static final String ENCODING = "ISO-8859-15"; //$NON-NLS-1$
+
+    private static final String PUBLIC_KEY = "Public key"; //$NON-NLS-1$
+
+    private static final String CUSTOM = "CUSTOM";//$NON-NLS-1$
+
+    private static final String PASSWORD = "Password"; //$NON-NLS-1$
+
     private FTPPage page;
 
     private LabelledText ftpUsernameText;
@@ -149,12 +157,12 @@ public class FTPFrom extends AbstractForm {
         layoutGroup.numColumns = 2;
         com.setLayout(layoutGroup);
         List<String> codeList = new ArrayList<String>();
-        codeList.add("ISO-8859-15"); //$NON-NLS-1$
+        codeList.add(ENCODING);
         codeList.add("UTF-8"); //$NON-NLS-1$
-        codeList.add("CUSTOM"); //$NON-NLS-1$
+        codeList.add(CUSTOM);
         encodeCombo = new LabelledCombo(com, "Encoding", "", codeList); //$NON-NLS-1$ //$NON-NLS-2$
         if (getConnection().getEcoding() == null || "".equals(getConnection().getEcoding())) { //$NON-NLS-1$
-            encodeCombo.setText("ISO-8859-15"); //$NON-NLS-1$
+            encodeCombo.setText(ENCODING);
             getConnection().setEcoding(encodeCombo.getText());
         }
 
@@ -195,8 +203,8 @@ public class FTPFrom extends AbstractForm {
         ftpsSuppBut = new Button(sftpCom, SWT.CHECK);
         ftpsSuppBut.setText(Messages.getString("FTPFrom_ftps_support")); //$NON-NLS-1$
         List<String> list = new ArrayList<String>();
-        list.add("Public key"); //$NON-NLS-1$
-        list.add("Password"); //$NON-NLS-1$
+        list.add(PUBLIC_KEY);
+        list.add(PASSWORD);
 
         methodCombo = new LabelledCombo(sftpCom, Messages.getString("FTPFrom_authen_method"), "", list); //$NON-NLS-1$ //$NON-NLS-2$
         methodCombo.setVisible(false);
@@ -330,9 +338,9 @@ public class FTPFrom extends AbstractForm {
             @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setEcoding(encodeCombo.getText());
-                if (getConnection().getEcoding().equals("CUSTOM")) { //$NON-NLS-1$
+                if (CUSTOM.equals(getConnection().getEcoding())) {
                     customText.setVisible(true);
-                    customText.setText("ISO-8859-15"); //$NON-NLS-1$
+                    customText.setText(ENCODING);
                     getConnection().setCustomEncode(customText.getText());
                 } else {
                     getConnection().setCustomEncode(getConnection().getEcoding());
@@ -354,7 +362,7 @@ public class FTPFrom extends AbstractForm {
             @Override
             public void modifyText(ModifyEvent e) {
                 getConnection().setMethod(methodCombo.getText());
-                if (getConnection().getMethod().equals("Public key")) { //$NON-NLS-1$
+                if (PUBLIC_KEY.equals(getConnection().getMethod())) {
                     privatekeyText.setVisible(true);
                     passphraseText.setVisible(true);
                     privatekeyText.setText(getConnection().getPrivatekey() != null ? getConnection().getPrivatekey() : "");
@@ -371,6 +379,21 @@ public class FTPFrom extends AbstractForm {
             }
         });
 
+        privatekeyText.addModifyListener(new ModifyListener() {
+
+            @Override
+            public void modifyText(ModifyEvent e) {
+                getConnection().setPrivatekey(privatekeyText.getText());
+            }
+        });
+
+        passphraseText.addModifyListener(new ModifyListener() {
+
+            @Override
+            public void modifyText(ModifyEvent e) {
+                getConnection().setPassphrase(passphraseText.getText());
+            }
+        });
     }
 
     /*
@@ -393,7 +416,7 @@ public class FTPFrom extends AbstractForm {
             public void widgetSelected(SelectionEvent e) {
                 boolean show = sftpSuppBut.getSelection();
                 ftpsSuppBut.setVisible(!show);
-                if ("Public key".equals(methodCombo.getText())) {
+                if (PUBLIC_KEY.equals(methodCombo.getText())) {
                     privatekeyText.setVisible(show);
                     passphraseText.setVisible(show);
                 }
@@ -470,7 +493,7 @@ public class FTPFrom extends AbstractForm {
         }
 
         // only check the Password model
-        if (sftpSuppBut.getSelection() && methodCombo != null && "Password".equals(methodCombo.getText())) {
+        if (sftpSuppBut.getSelection() && methodCombo != null && PASSWORD.equals(methodCombo.getText())) {
             if (ftpPasswordText.getCharCount() == 0) {
                 updateStatus(IStatus.ERROR, "Password can not be null!"); //$NON-NLS-1$
                 return false;
@@ -493,13 +516,13 @@ public class FTPFrom extends AbstractForm {
         ftpPortText.setText(getConnection().getPort());
         ftpHostText.setText(getConnection().getHost());
         encodeCombo.setText(getConnection().getEcoding());
-        if (encodeCombo.getText().equals("CUSTOM")) { //$NON-NLS-1$
+        if (CUSTOM.equals(encodeCombo.getText())) {
             customText.setVisible(true);
         } else {
             customText.setVisible(false);
         }
         if (getConnection().getCustomEncode() == null) {
-            customText.setText("ISO-8859-15"); //$NON-NLS-1$
+            customText.setText(ENCODING);
         } else {
             customText.setText(getConnection().getCustomEncode());
         }
@@ -510,7 +533,7 @@ public class FTPFrom extends AbstractForm {
             connModelCombo.setVisible(false);
             sftpSuppBut.setSelection(getConnection().isSFTP());
             methodCombo.setText(getConnection().getMethod());
-            if (getConnection().getMethod().equals("Public key")) { //$NON-NLS-1$
+            if (PUBLIC_KEY.equals(getConnection().getMethod())) {
                 privatekeyText.setVisible(true);
                 passphraseText.setVisible(true);
                 privatekeyText.setText(getConnection().getPrivatekey() != null ? getConnection().getPrivatekey() : "");
@@ -574,10 +597,10 @@ public class FTPFrom extends AbstractForm {
             getConnection().setProxyuser(""); //$NON-NLS-1$
         }
         if (!customText.isVisible()) {
-            getConnection().setCustomEncode("ISO-8859-15"); //$NON-NLS-1$
+            getConnection().setCustomEncode(ENCODING);
         }
         if (getConnection().getCustomEncode() == null || "".equals(getConnection().getCustomEncode())) { //$NON-NLS-1$
-            getConnection().setCustomEncode("ISO-8859-15"); //$NON-NLS-1$
+            getConnection().setCustomEncode(ENCODING);
         }
     }
 
