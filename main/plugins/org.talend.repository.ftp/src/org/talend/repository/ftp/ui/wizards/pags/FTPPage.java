@@ -16,7 +16,8 @@ import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.widgets.Composite;
 import org.talend.core.model.properties.ConnectionItem;
-import org.talend.repository.ftp.ui.wizards.froms.FTPFrom;
+import org.talend.repository.ftp.i18n.Messages;
+import org.talend.repository.ftp.ui.wizards.forms.FTPForm;
 import org.talend.repository.ui.swt.utils.AbstractForm;
 
 /**
@@ -24,7 +25,7 @@ import org.talend.repository.ui.swt.utils.AbstractForm;
  */
 public class FTPPage extends WizardPage {
 
-    private FTPFrom ftpForm;
+    private FTPForm ftpForm;
 
     private ConnectionItem connectionItem;
 
@@ -38,11 +39,11 @@ public class FTPPage extends WizardPage {
      * @param pageName
      */
     public FTPPage(ConnectionItem connectionItem, boolean isRepositoryObjectEditable, String[] existingNames) {
-        super("Talend_FTP"); //$NON-NLS-1$
+        super("wizardPage"); //$NON-NLS-1$
         this.connectionItem = connectionItem;
         this.existingNames = existingNames;
         this.isRepositoryObjectEditable = isRepositoryObjectEditable;
-        this.setTitle("Talend_FTP"); //$NON-NLS-1$
+        this.setTitle(Messages.getString("FTPPage_titleCreate_Step")); //$NON-NLS-1$
     }
 
     /*
@@ -51,12 +52,14 @@ public class FTPPage extends WizardPage {
      * @see org.eclipse.jface.dialogs.IDialogPage#createControl(org.eclipse.swt.widgets.Composite)
      */
 
+    @Override
     public void createControl(Composite parent) {
-        ftpForm = new FTPFrom(parent, connectionItem, existingNames, this);
+        ftpForm = new FTPForm(parent, connectionItem, existingNames, this);
         ftpForm.setReadOnly(!isRepositoryObjectEditable);
 
         AbstractForm.ICheckListener listener = new AbstractForm.ICheckListener() {
 
+            @Override
             public void checkPerformed(final AbstractForm source) {
                 if (source.isStatusOnError()) {
                     FTPPage.this.setPageComplete(false);
@@ -81,6 +84,7 @@ public class FTPPage extends WizardPage {
      * @see org.eclipse.jface.wizard.WizardPage#getNextPage()
      */
 
+    @Override
     public IWizardPage getNextPage() {
         ftpForm.removeHideValue();
         return super.getNextPage();

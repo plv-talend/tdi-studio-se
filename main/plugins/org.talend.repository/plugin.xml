@@ -2186,6 +2186,14 @@
               name="Add the gid use string parameter if not have, value=false"
               version="5.6.0">
         </projecttask>
+        <projecttask
+              beforeLogon="false"              
+              breaks="5.3.1"
+              class="org.talend.repository.model.migration.EncryptPassword4FTPItemFileMigrationTask"
+              id="org.talend.repository.model.migration.EncryptPassword4FTPItemFileMigrationTask"
+              name="Encrypt passwords in password fields of the FTP item "
+              version="5.4.3">
+        </projecttask>
    </extension>
    
    <extension
