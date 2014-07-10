@@ -70,6 +70,8 @@ skeleton="../tXMLMap/tXMLMap_java.skeleton"
 		//current output table action
 		if(hasDocumentInMainInputTable) {
 			loopHelper.initForOneOutputTable(currentOutputTable);
+			
+			xpathHelperForMain.setInputLoopsInCurrentOutputTable(loopHelper.getInputLoopsInCurrentOutputTable());
 		}
 		
 		//output loops in current output table

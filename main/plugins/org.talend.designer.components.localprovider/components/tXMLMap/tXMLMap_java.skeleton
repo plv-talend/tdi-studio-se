@@ -216,6 +216,12 @@ public class CLASS {
 		Map<String,String> xpathToPattern = new HashMap<String,String>();
 		Map<String,String> xpathToType = new HashMap<String,String>();
 		
+		//all input loops used by current output table
+		List<TreeNode> inputLoopsInCurrentOutputTable;
+		public void setInputLoopsInCurrentOutputTable(List<TreeNode> inputLoopsInCurrentOutputTable) {
+			this.inputLoopsInCurrentOutputTable = inputLoopsInCurrentOutputTable;
+		}
+		
 		public Map<String,String> getXpathToPatternMap(){
 			return xpathToPattern;
 		}
@@ -253,7 +259,7 @@ public class CLASS {
 			findOutputNodes(rootNode, outNodes);
 			
 			//build xpath with prefix
-			finalLoopNodeXPath = buildXPathWithPrefix(loopNode, dPrefixMapping);
+			finalLoopNodeXPath = buildXPathWithPrefix(getXPath(loopNode.getXpath()), dPrefixMapping);
 			
 			outNodesXPath = new HashMap<String,String>();
 			buildXPathWithPrefix(outNodes, dPrefixMapping, outNodesXPath);
@@ -319,7 +325,25 @@ public class CLASS {
 				}else if(loopNodeXPath.equals(currentNodeXPath)){
 					nodesXPath.put(currentNodeXPath, ".");
 				}else{
-					String nodeXPathWithPrefix = buildXPathWithPrefix(node, dPrefixMapping);
+					String xpath = getXPath(currentNodeXPath);
+					
+					if(inputLoopsInCurrentOutputTable!=null) {
+						for(TreeNode inputLoop : inputLoopsInCurrentOutputTable) {
+							if(loopNode.equals(inputLoop)) {//skip current loop
+								continue;
+							}
+							
+							String otherLoopNodeXPath = inputLoop.getXpath();
+							if(currentNodeXPath.equals(otherLoopNodeXPath) || isChild(currentNodeXPath,otherLoopNodeXPath)) {//current node in other loop node
+								StringBuilder sb = new StringBuilder(currentNodeXPath);
+								String newXPath = sb.insert(otherLoopNodeXPath.length(),"[1]").toString();
+							 	xpath = getXPath(newXPath);
+							 	break;
+							}
+						}
+					}
+					
+					String nodeXPathWithPrefix = buildXPathWithPrefix(xpath, dPrefixMapping);
 					if(isChild(nodeXPathWithPrefix,finalLoopNodeXPath)){
 						String relativeXPath = nodeXPathWithPrefix.substring(finalLoopNodeXPath.length() + 1);
 						nodesXPath.put(currentNodeXPath, relativeXPath);
@@ -348,8 +372,7 @@ public class CLASS {
             return asChild.startsWith(asParent) && '/' == asChild.charAt(asParent.length());
 		}
 		
-		private String buildXPathWithPrefix(TreeNode node, Map<String,String> dPrefixMapping){
-			String xpath = getXPath(node);
+		private String buildXPathWithPrefix(String xpath, Map<String,String> dPrefixMapping){
 			StringBuilder finalXPath = new StringBuilder();
 			return buildXPathWithPrefix(finalXPath, xpath, dPrefixMapping);
 			
@@ -411,14 +434,14 @@ public class CLASS {
 					}else{
 						String defaultPrefix = findVaildDefaultPrefix();
 						nsMapping.put(defaultPrefix,childNode.getDefaultValue());
-						//dPrefixMapping.put(getXPath(currentNode),defaultPrefix);
+						//dPrefixMapping.put(getXPath(currentNode.getXpath()),defaultPrefix);
 						parentDPrefix = defaultPrefix;
 					}
 				}
 			}
 			if(!currentNode.getName().contains(":")){
 				if(parentDPrefix != null && !"".equals(parentDPrefix)){
-					dPrefixMapping.put(getXPath(currentNode),parentDPrefix);
+					dPrefixMapping.put(getXPath(currentNode.getXpath()),parentDPrefix);
 				}
 			}else{
 				//parentDPrefix = null;
@@ -459,8 +482,7 @@ public class CLASS {
 			return null;
 		}
 		
-		private String getXPath(TreeNode node){
-			String uiXPath = node.getXpath();
+		private String getXPath(String uiXPath){
 			return uiXPath.substring(uiXPath.indexOf(":")+1);
 		}
 	}
@@ -688,6 +710,10 @@ public class CLASS {
 		boolean parallelLoopExistInCurrentOutputTable;
 		
 		boolean nestedLoopExistInCurrentOutputTable;
+		
+		public List<TreeNode> getInputLoopsInCurrentOutputTable() {
+			return inputLoopsInCurrentOutputTable;
+		}
 		
 		//set current output table and init
 		public void initForOneOutputTable(OutputXmlTree currentOutputTable) {
