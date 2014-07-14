@@ -106,23 +106,48 @@
 			
 		
 <%
-	//TODO add type mapping 4 sap table
 	for(int i=0;i<columnList.size();i++) {
 		IMetadataColumn column = columnList.get(i);
 	    String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getTalendType(),column.isNullable());
 	    JavaType javaType = JavaTypesManager.getJavaTypeFromId(column.getTalendType());
-	    String defaultValue = JavaTypesManager.getDefaultValueFromJavaType(typeToGenerate);
-	    String patternValue = column.getPattern() == null || column.getPattern().trim().length() == 0 ? null : column.getPattern();
 	    
-		if(javaType == JavaTypesManager.DATE) {
-%>
-			<%=outputConnection.getName() %>.<%=column.getLabel() %> = ParserUtils.parseTo_Date(data_<%=cid%>.getString(<%=i%>),<%=patternValue%>);
-<%
-		} else if(javaType == JavaTypesManager.OBJECT) {
+		if(javaType == JavaTypesManager.STRING) {
 %>
 			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getString(<%=i%>);
 <%
-		} else{
+		} else if(javaType == JavaTypesManager.INTEGER) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getInteger(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.SHORT) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getShort(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.DATE) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getDate(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.BYTE) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getByte(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.BYTE_ARRAY) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getRaw(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.DOUBLE) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getDouble(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.BIGDECIMAL) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getBigDecimal(<%=i%>);
+<%
+		} else if(javaType == JavaTypesManager.OBJECT) {
+%>
+			<%=outputConnection.getName() %>.<%=column.getLabel() %> = data_<%=cid%>.getValue(<%=i%>);
+<%
+		} else {
 %>
 			<%=outputConnection.getName() %>.<%=column.getLabel() %> = ParserUtils.parseTo_<%=typeToGenerate%>(data_<%=cid%>.getString(<%=i%>));
 <%
