@@ -154,8 +154,3 @@
 		}
 	}
 %>
-		//} while(data_<%=cid%>.nextRow());
-	//}//end try
-	
-	
-	
