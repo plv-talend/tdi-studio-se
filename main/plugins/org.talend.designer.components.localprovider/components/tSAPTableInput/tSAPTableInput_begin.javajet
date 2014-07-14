@@ -63,8 +63,6 @@
 	String startRowNumber = ElementParameterParser.getValue(node, "__START_ROW__");
 	String maxRowCount = ElementParameterParser.getValue(node, "__MAX_ROW_COUNT__");
 	
-	List<Map<String, String>> mapping = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node,"__MAPPING__");
-	
 	String passwordFieldName = "__PASSWORD__";
 %>
 	<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>
@@ -88,11 +86,12 @@
 	
 	java.util.List<String> fieldNames_<%=cid%> = new java.util.LinkedList<String>();
 <%
-	for(int i=0;i<mapping.size();i++){
-		Map<String, String> map = mapping.get(i);
-		String tableField= map.get("TABLE_FIELD");
+	for(int i=0;i<columnList.size();i++) {
+		IMetadataColumn column = columnList.get(i);
+		
+		String tableField= column.getOriginalDbColumnName();
 %>
-		fieldNames_<%=cid%>.add(<%=tableField%>);
+		fieldNames_<%=cid%>.add("<%=tableField%>");
 <%
 	}
 %>	
