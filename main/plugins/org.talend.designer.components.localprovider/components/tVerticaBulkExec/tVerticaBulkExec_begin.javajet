@@ -19,6 +19,10 @@ skeleton="../templates/db_output_bulk.skeleton"
 CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 INode node = (INode)codeGenArgument.getArgument();
 String cid = node.getUniqueName();
+String globalCid = ElementParameterParser.getValue(node, "__CID__");
+if(globalCid == null || "".equals(globalCid) || "\"\"".equals(globalCid)) {
+	globalCid = cid;
+}
 
 String field_separator = ElementParameterParser.getValue(node, "__FIELDS_TERMINATED_BY__");
 String null_string = ElementParameterParser.getValue(node, "__NULL_STRING__");
@@ -28,6 +32,7 @@ String port = ElementParameterParser.getValue(node, "__PORT__");
 String db = ElementParameterParser.getValue(node, "__DBNAME__");
 String dbschema = ElementParameterParser.getValue(node, "__SCHEMA_DB__");
 String user = ElementParameterParser.getValue(node, "__USER__");
+String dbproperties = ElementParameterParser.getValue(node, "__PROPERTIES__");
 boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(node.getProcess(), "__LOG4J_ACTIVATE__"));
 
 String table = ElementParameterParser.getValue(node, "__TABLE__");
@@ -70,8 +75,13 @@ java.sql.Connection conn_<%=cid%> = null;
 		}
 		%>
 		java.lang.Class.forName(driverClass_<%=cid%>).newInstance();
+		
+		<%if(dbproperties == null || ("\"\"").equals(dbproperties) || ("").equals(dbproperties)) {%>
 		String url_<%=cid %> = "jdbc:vertica://" + <%=host%> + ":" + <%=port%> + "/" + <%=db%>;
-	        
+	    <%} else {%>
+	    String url_<%=cid %> = "jdbc:vertica://" + <%=host%> + ":" + <%=port%> + "/" + <%=db%> + "?" + <%=dbproperties%>;
+	    <%}%>
+	    
 		<%
 		String passwordFieldName = "__PASS__";
 		%>
@@ -141,13 +151,25 @@ if(("UPDATE").equals(dataAction)) {
 	}
 }
 if(("INSERT").equals(dataAction) || columnList != null && columnList.size() > 0) {
+		String rejectedDataFile = ElementParameterParser.getValue(node, "__REJECTED_DATA_FILE__");
+		String exceptionFile = ElementParameterParser.getValue(node, "__EXCEPTION_FILE__");
 %>
 		Character OUT_DELIM_<%=cid %> = <%=field_separator%>.charAt(0);
 		String sql_<%=cid %> = "COPY " + tableName_<%=cid%> + " FROM STDIN DELIMITER '" +OUT_DELIM_<%=cid %> + "'" 
 	    <%if(hasNullString){
 		%> + " NULL '"  + <%=null_string%> + "'"
 		<%}%>
-		<%if(ros){%> + " DIRECT"<%}%>;
+		<%if(ros){%> + " DIRECT"<%}%>
+		
+		<%if(rejectedDataFile!=null && !"".equals(rejectedDataFile) && !"\"\"".equals(rejectedDataFile)) {%>
+			+ " REJECTED DATA '" + <%=rejectedDataFile%> + "'"
+		<%}%>
+		
+		<%if(exceptionFile!=null && !"".equals(exceptionFile) && !"\"\"".equals(exceptionFile)) {%>
+			+ " EXCEPTIONS '" + <%=exceptionFile%> + "'"
+		<%}%>
+		;
+		
 		<%if(isLog4jEnabled){%>
             log.info("<%=cid%> - Bulk inserting." );
         <%}%>
@@ -164,6 +186,24 @@ if(("INSERT").equals(dataAction) || columnList != null && columnList.size() > 0)
             log.info("<%=cid%> - Bulk load finished.");
         <%}%>
 		long copyNumber_<%=cid%> = vcs_<%=cid%>.getRowCount();
+		
+		//get rejected and accepted row number
+		java.sql.Statement stmt_accept_reject_<%=cid %> = conn_<%=cid %>.createStatement();
+		
+	    java.sql.ResultSet rs_<%=cid %> = stmt_accept_reject_<%=cid %>.executeQuery("select get_num_accepted_rows()");
+	    int accetpedRowNumber_<%=cid%> = 0;
+	    while (rs_<%=cid %>.next()) {
+	    	accetpedRowNumber_<%=cid %> = rs_<%=cid %>.getInt(1);
+		}
+		
+	    rs_<%=cid %> = stmt_accept_reject_<%=cid %>.executeQuery("select get_num_rejected_rows()");
+	    int rejectedRowNumber_<%=cid%> = 0;
+	    while (rs_<%=cid %>.next()) {
+	    	rejectedRowNumber_<%=cid %> = rs_<%=cid %>.getInt(1);
+		}
+		
+		stmt_accept_reject_<%=cid %>.close();
+		
 		if(<%=exitOnNoRows%> && copyNumber_<%=cid%> <= 0){
 			<%if(isLog4jEnabled){%>
 				log.fatal("<%=cid%> - No record was loaded into component <%=cid %>." );
@@ -175,6 +215,9 @@ if(("INSERT").equals(dataAction) || columnList != null && columnList.size() > 0)
 			<%}%>
 			System.out.println("Number of records loaded into table " + tableName_<%=cid %> + " by <%=cid %>: " + (copyNumber_<%=cid%>));
 		}
+		
+		globalMap.put("<%=globalCid %>_ACCEPTED_ROW_NUMBER",accetpedRowNumber_<%=cid %>);
+		globalMap.put("<%=globalCid %>_REJECTED_ROW_NUMBER",rejectedRowNumber_<%=cid%>);
 <%
 	}else{
 %>
@@ -207,6 +250,8 @@ if(("INSERT").equals(dataAction) || columnList != null && columnList.size() > 0)
 			<%}%>
 			System.out.println("Number of records loaded to table " + tableName_<%=cid %> + " by <%=cid %>: " + (nbLineAfterLoad_<%=cid %> - nbLineBeforeLoad_<%=cid %>));
 		}
+		
+		globalMap.put("<%=globalCid %>_ACCEPTED_ROW_NUMBER",nbLineAfterLoad_<%=cid %> - nbLineBeforeLoad_<%=cid %>);
 <%
     }
 }

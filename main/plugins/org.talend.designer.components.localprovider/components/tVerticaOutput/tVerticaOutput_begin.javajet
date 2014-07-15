@@ -33,9 +33,15 @@ skeleton="../templates/db_output_bulk.skeleton"
 			}
 		}
 		public void setURL(INode node) {
+			if(dbproperties == null || ("\"\"").equals(dbproperties) || ("").equals(dbproperties)) {
 		%>
-			String url_<%=cid %> = "jdbc:vertica://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%>;
+				String url_<%=cid %> = "jdbc:vertica://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%>;
 		<%
+			} else {
+		%>
+				String url_<%=cid %> = "jdbc:vertica://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%> + "?" + <%=dbproperties%>;
+		<%
+			}
 		}
 		public void defineSchema(INode node,Manager manager){
 			defineSchemaTable(node,manager,"dbschema_");
@@ -56,7 +62,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 			int copiedCount_<%=cid%>=0;
 		<%
 		}
-		public void createProjection(boolean createProjection,List<Column> stmtStructure){
+		private void createProjection(boolean createProjection,List<Column> stmtStructure){
 			if(createProjection){
 				StringBuilder columnListStr = new StringBuilder();
 				boolean firstColumn = true;
@@ -82,7 +88,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 				}
 			%>
 				java.sql.Statement stmtCreateProjection_<%=cid%> = conn_<%=cid%>.createStatement();
-				stmtCreateProjection_<%=cid%>.execute("CREATE PROJECTION " + tableName_<%=cid%> + "_proj (<%=columnListStr.toString()%>) AS SELECT <%=columnListStr.toString()%> FROM " + tableName_<%=cid%>);//
+				stmtCreateProjection_<%=cid%>.execute("CREATE PROJECTION " + tableName_<%=cid%> + "_proj (<%=columnListStr.toString()%>) AS SELECT <%=columnListStr.toString()%> FROM " + tableName_<%=cid%>);
 				stmtCreateProjection_<%=cid%>.close();
 			<%
 			}
@@ -148,3 +154,16 @@ skeleton="../templates/db_output_bulk.skeleton"
 	dbOutputBeginUtil = new DBOutputBeginUtil();
 %>
 <%@ include file="../templates/DB/Output/AbstractDBOutputBegin.javajet"%>
+<%
+	if(isDynamic) {
+		if ("COPY".equals(dataAction)) {
+%>
+			java.sql.Statement stmt_<%=cid%> = null;
+			StringBuilder stmtBuilder_<%=cid%> = null;
+			String template_<%=cid%> = null;
+<%
+		}
+	}
+%>
+
+

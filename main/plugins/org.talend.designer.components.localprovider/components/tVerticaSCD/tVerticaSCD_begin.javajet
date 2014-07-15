@@ -85,8 +85,14 @@ if(inputSchema != null && inputSchema.size() > 0 && outputSchema != null && outp
 		<%
 		}
 		%>
-        dbschema_<%=cid%> = <%=dbschema%>;	
+        dbschema_<%=cid%> = <%=dbschema%>;
+        
+        <%if(dbproperties == null || ("\"\"").equals(dbproperties) || ("").equals(dbproperties)) {%>
 		String url_<%=cid %> = "jdbc:vertica://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%>;
+		<%} else {%>
+		String url_<%=cid %> = "jdbc:vertica://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%> + "?" + <%=dbproperties%>;
+		<%}%>
+		
 		String dbUser_<%=cid %> = <%=dbuser%>;
 
 		<%

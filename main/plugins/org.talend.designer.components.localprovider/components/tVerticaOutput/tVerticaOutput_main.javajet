@@ -22,6 +22,9 @@ skeleton="../templates/db_output_bulk.skeleton"
 <%
 	class DBOutputMainUtil extends DefaultDBOutputUtil{
 		boolean manualCommit;
+		IConnection connection;
+		List<Column> stmtStructure;
+		
 		public void beforeComponentProcess(INode node){
 			super.beforeComponentProcess(node);
 			useBatchSize = ("true").equals(ElementParameterParser.getValue(node,"__BATCH_MODE__"));
@@ -35,20 +38,64 @@ skeleton="../templates/db_output_bulk.skeleton"
 				}
 			}
 			executeBatch = useBatchSize && !("").equals(batchSize) && !("0").equals(batchSize) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction) ||"COPY".equals(dataAction));
+			
+			List<? extends IConnection> connections = node.getIncomingConnections();
+			if(connections!=null && connections.size()>0){
+				connection = connections.get(0);
+			}
 		}
 		public boolean addBatch(){
 			boolean addBatch = rejectConnName==null && (useBatchSize||(!("true").equals(useExistingConn) && manualCommit));
 			return addBatch;
 		}
 		public void dataActionMore(INode node,List<Column> colStruct,Manager manager,String incomingConnName,List<IMetadataColumn> rejectColumnList,List<IMetadataColumn> columnList){
-			if ("COPY".equals(dataAction)) {
+			if ("COPY".equals(dataAction)) {//don't support additional columns
 				int counter = 1;
 				for(int i = 0; i < columnList.size(); i++) {
 					IMetadataColumn column = columnList.get(i);
-					//if(column.isInsertable()) {
 					JavaType javaType = JavaTypesManager.getJavaTypeFromId(column.getTalendType());
 					String pattern = column.getPattern() == null || column.getPattern().trim().length() == 0 ? null : column.getPattern();
-					if(JavaTypesManager.isJavaPrimitiveType( column.getTalendType(), column.isNullable())){
+					if("id_Dynamic".equals(column.getTalendType())) {//dynamic column can't be null
+%>
+					    for(int i_<%=cid%> = 0; i_<%=cid%> < <%=incomingConnName %>.<%=column.getLabel() %>.getColumnCount(); i_<%=cid%>++) {
+					    	Object currentValue_<%=cid%> = <%=incomingConnName %>.<%=column.getLabel() %>.getColumnValue(i_<%=cid%>);
+					    	if(currentValue_<%=cid%> == null) {
+					    		stmtBuilder_<%=cid%>.append("");
+					    		continue;
+					    	}
+					    	stmtBuilder_<%=cid%>.append("|");
+					    	routines.system.DynamicMetadata metadata_<%=cid%> = <%=incomingConnName %>.<%=column.getLabel() %>.getColumnMetadata(i_<%=cid%>);
+					    	if("id_String".equals(metadata_<%=cid%>.getType())) {
+					    		stmtBuilder_<%=cid%>.append(String.valueOf(currentValue_<%=cid%>).replaceAll("\\|","\\\\|"));
+					    	} else if("id_Date".equals(metadata_<%=cid%>.getType())) {
+					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Date((java.util.Date)currentValue_<%=cid%>, <%= pattern %>));
+					    	} else if("id_Byte".equals(metadata_<%=cid%>.getType()) 
+					    		|| "id_Short".equals(metadata_<%=cid%>.getType()) 
+					    		|| "id_Integer".equals(metadata_<%=cid%>.getType()) 
+					    		|| "id_Long".equals(metadata_<%=cid%>.getType())
+					    	) {
+					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(currentValue_<%=cid%>), null, '.'));
+					    	} else if("id_BigDecimal".equals(metadata_<%=cid%>.getType())) {
+					    		BigDecimal decimal_<%=cid%> = (BigDecimal)currentValue_<%=cid%>;
+					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_" + cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
+					    	} else if("id_Float".equals(metadata_<%=cid%>.getType())) {
+					    		BigDecimal decimal_<%=cid%> = new BigDecimal((Float)currentValue_<%=cid%>);
+								stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_"+cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
+					    	} else if("id_Double".equals(metadata_<%=cid%>.getType())) {
+					    		BigDecimal decimal_<%=cid%> = new BigDecimal((Double)currentValue_<%=cid%>);
+					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_"+cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
+					    	} else if("id_byte[]".equals(metadata_<%=cid%>.getType())) {
+					    		stmtBuilder_<%=cid%>.append(java.nio.charset.Charset.defaultCharset().decode(java.nio.ByteBuffer.wrap((byte[])currentValue_<%=cid%>)).toString());
+					    	} else {
+					    		stmtBuilder_<%=cid%>.append(String.valueOf(currentValue_<%=cid%>));
+					    	}
+					    	stmtBuilder_<%=cid%>.append("|");
+					    	if(i_<%=cid%> < (<%=incomingConnName %>.<%=column.getLabel() %>.getColumnCount() - 1)) {
+					    		stmtBuilder_<%=cid%>.append(";");
+					    	}
+					    }
+<%
+					} else if(JavaTypesManager.isJavaPrimitiveType(column.getTalendType(), column.isNullable())){
 					%>
 						stmtBuilder_<%=cid%>.append("|");
 						stmtBuilder_<%=cid%>.append(String.valueOf(<%=incomingConnName %>.<%=column.getLabel() %>));
@@ -275,6 +322,112 @@ skeleton="../templates/db_output_bulk.skeleton"
 					}
 				<%
 				}
+			}
+		}
+		
+		private String getColumnsSql(List<Column> stmtStructure) {
+			return getColumnsSql(stmtStructure,false);
+		}
+		
+		private String getColumnsSql(List<Column> stmtStructure,boolean ignoreAddedAndReplacementColumn) {
+			StringBuilder columnListStr = new StringBuilder();
+			boolean firstColumn = true;
+			for(Column column : stmtStructure) {
+				if(ignoreAddedAndReplacementColumn && column.isAddCol()) {
+					continue;
+				}
+				
+				if(!ignoreAddedAndReplacementColumn && column.isReplaced()) {
+					List<Column> replacedColumns = column.getReplacement();
+					for(Column replacedColumn : replacedColumns) {
+						if(firstColumn) {
+							firstColumn = false;
+						} else {
+							columnListStr.append(", ");
+						}
+						columnListStr.append(replacedColumn.getName());
+					}
+				} else {
+					if(firstColumn) {
+						firstColumn = false;
+					} else {
+						columnListStr.append(", ");
+					}
+					if(column.isDynamic()) {
+						columnListStr.append("\"+");
+						columnListStr.append("DynamicUtils.getInsertIntoStmtColumnsList(");
+						
+						columnListStr.append(connection.getName());
+						columnListStr.append(".");
+						columnListStr.append(column.getName());
+						columnListStr.append(",");
+						columnListStr.append("\"");
+						columnListStr.append(dbmsId);
+						columnListStr.append("\"");
+						
+						columnListStr.append(")");
+						columnListStr.append("+\"");
+					} else {
+						columnListStr.append(column.getName());
+					}
+				}
+			}
+			return columnListStr.toString();
+		}
+		
+		private void createProjection(boolean createProjection,List<Column> stmtStructure){
+			if(createProjection){
+				String columnListStr = getColumnsSql(stmtStructure);
+			%>
+				java.sql.Statement stmtCreateProjection_<%=cid%> = conn_<%=cid%>.createStatement();
+				stmtCreateProjection_<%=cid%>.execute("CREATE PROJECTION " + tableName_<%=cid%> + "_proj (<%=columnListStr%>) AS SELECT <%=columnListStr%> FROM " + tableName_<%=cid%>);
+				stmtCreateProjection_<%=cid%>.close();
+			<%
+			}
+		}
+		
+		public void actionOnTable(INode node,List<Column> stmtStructure){
+			this.stmtStructure = stmtStructure;
+			boolean createProjection = "true".equals(ElementParameterParser.getValue(node,"__CREATE_PROJECTION__"))&&
+				!"true".equalsIgnoreCase(ElementParameterParser.getValue(node, "__PARALLELIZE__"));
+			if(("CREATE_IF_NOT_EXISTS").equals(tableAction)) {
+				%>
+				if(!whetherExist_<%=cid%>) {
+				<%
+					createProjection(createProjection,stmtStructure);
+				%>
+				}
+				<%
+			}else{
+				if(!("CLEAR").equals(tableAction) && !("NONE").equals(tableAction)){
+					createProjection(createProjection,stmtStructure);
+				}
+			}
+		}
+		
+		public void prepareDataActionMore(INode node,Manager manager,StringBuilder insertColName,StringBuilder insertValueStmt,StringBuilder updateSetStmt,StringBuilder updateWhereStmt){
+			if (("COPY").equals(dataAction)) {
+				boolean abortOnError = "true".equals(ElementParameterParser.getValue(node,"__ABORT_ON_ERROR__"));
+				String rejectMax = ElementParameterParser.getValue(node,"__REJECT_MAX__");
+				String exceptionsPath = ElementParameterParser.getValue(node,"__EXCEPTIONS_PATH__");
+				String rejectsPath = ElementParameterParser.getValue(node,"__REJECTED_DATA__");
+				boolean noCommit = "true".equals(ElementParameterParser.getValue(node,"__NO_COMMIT__"));
+				String exceptionNode = ElementParameterParser.getValue(node,"__EXCEPTIONS_NODE__");
+				String rejectsNode = ElementParameterParser.getValue(node,"__REJECTED_NODE__");
+				rejectMax = rejectMax == null || "".equals(rejectMax.trim()) ? "" : " REJECTMAX "+rejectMax+" ";
+				exceptionsPath = exceptionsPath == null || "".equals(exceptionsPath.trim()) ? "" : " EXCEPTIONS '\"+"+exceptionsPath+"+\"' ";
+				exceptionNode = exceptionNode == null || "".equals(exceptionNode.trim()) ? "" : " ON "+exceptionNode+" ";
+				rejectsPath = rejectsPath == null || "".equals(rejectsPath.trim()) ? "" : " REJECTED DATA '\"+"+rejectsPath+"+\"' ";
+				rejectsNode = rejectsNode == null || "".equals(rejectsNode.trim()) ? "" : " ON "+rejectsNode+" ";
+				String exceptionString = !"".equals(exceptionsPath) ? exceptionsPath + exceptionNode : "";
+				String rejectString = !"".equals(rejectsPath) ? rejectsPath + rejectsNode : "";
+				String noComm = !noCommit ? "" : " NO COMMIT ";
+				String abort = abortOnError ? " ABORT ON ERROR " : "";
+				%>
+				stmtBuilder_<%=cid%> = new StringBuilder();
+				stmt_<%=cid%> = conn_<%=cid%>.createStatement();
+				template_<%=cid%> = "COPY " + tableName_<%=cid%> +" (<%=getColumnsSql(this.stmtStructure,true)%>)" + " FROM STDIN UNCOMPRESSED WITH DELIMITER ';' RECORD TERMINATOR '\n' ENCLOSED BY '|' NULL AS '' <%=rejectMax%><%=exceptionString%><%=rejectString%><%=abort%>DIRECT<%=noComm%>";
+			<%
 			}
 		}
 	}
