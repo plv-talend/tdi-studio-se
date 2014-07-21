@@ -86,6 +86,8 @@ public class LoginDialog extends TrayDialog {
 
     private TOSLoginComposite tosLoginComposite;
 
+    private final static String CANCELLD = "Revert/Commit operation of modified item cancelled";
+
     /**
      * Construct a new LoginDialog.
      * 
@@ -393,10 +395,23 @@ public class LoginDialog extends TrayDialog {
 
             dialog.run(true, true, runnable);
 
-        } catch (InvocationTargetException e) {
+        } catch (final InvocationTargetException e) {
             if (PluginChecker.isSVNProviderPluginLoaded()) {
                 loginComposite.populateProjectList();
-                MessageBoxExceptionHandler.process(e.getTargetException(), getShell());
+                if (e.getTargetException().getLocalizedMessage() != null
+                        && e.getTargetException().getLocalizedMessage().contains(CANCELLD)) {
+                    Display.getDefault().syncExec(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            MessageDialog.openError(Display.getDefault().getActiveShell(),
+                                    Messages.getString("LoginDialog.logonCanceled"), e.getTargetException().getLocalizedMessage());
+                        }
+
+                    });
+                } else {
+                    MessageBoxExceptionHandler.process(e.getTargetException(), getShell());
+                }
             } else {
                 loginComposite.populateTOSProjectList();
                 MessageBoxExceptionHandler.process(e.getTargetException(), getShell());
