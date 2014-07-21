@@ -35,6 +35,23 @@ imports="
 			useExistingConn="";
 			super.setCommit(node);
 		}
+		
+		public void afterConnection(INode node){
+			String use_NB_Line = ElementParameterParser.getValue(node, "__USE_NB_LINE__");
+			if ("NB_LINE_INSERTED".equals(use_NB_Line)) {
+			%>
+				int nb_line_inserted_<%=cid%> = 0;
+			<%
+			} else if ("NB_LINE_UPDATED".equals(use_NB_Line)) {
+			%>
+				int nb_line_update_<%=cid%> = 0;
+			<%
+			} else if ("NB_LINE_DELETED".equals(use_NB_Line)) {
+			%>
+				int nb_line_deleted_<%=cid%> = 0;
+			<%
+			}
+		}
 	}
 	dbRowBeginUtil = new DBRowBeginUtil();
 %>

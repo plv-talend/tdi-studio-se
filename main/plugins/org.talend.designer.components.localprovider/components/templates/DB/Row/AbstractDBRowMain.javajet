@@ -28,6 +28,7 @@ boolean usePrepareStatement = "true".equals(ElementParameterParser.getValue(node
 String dbquery= ElementParameterParser.getValue(node, "__QUERY__");
 dbquery = org.talend.core.model.utils.NodeUtil.replaceCRLFInMEMO_SQL(dbquery);
 List<Map<String, String>> prepareStatementParameters = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__SET_PREPAREDSTATEMENT_PARAMETERS__");
+String use_NB_Line = ElementParameterParser.getValue(node, "__USE_NB_LINE__");
 String incomingConnName = null;
 Set<String> inputCols = new HashSet<String>();
 List<IMetadataColumn> columnList = null;
@@ -127,7 +128,38 @@ try {
 		<%
 		}
 	}
-    log4jCodeGenerateUtil.logInfo(node,"info",cid+" - Execute the query: '\" + "+dbquery +" + \"' has finished.");
+	log4jCodeGenerateUtil.logInfo(node,"info",cid+" - Execute the query: '\" + "+dbquery +" + \"' has finished.");
+%>
+<%
+	if(usePrepareStatement){
+		if ("NB_LINE_INSERTED".equals(use_NB_Line)) {
+%>
+		nb_line_inserted_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+<%
+		} else if ("NB_LINE_UPDATED".equals(use_NB_Line)) {
+%>
+		nb_line_update_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+<%
+		} else if ("NB_LINE_DELETED".equals(use_NB_Line)) {
+%>
+		nb_line_deleted_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+<%
+		}
+	} else {
+		if ("NB_LINE_INSERTED".equals(use_NB_Line)) {
+%>
+		nb_line_inserted_<%=cid%> += stmt_<%=cid %>.getUpdateCount();
+<%
+		} else if ("NB_LINE_UPDATED".equals(use_NB_Line)) {
+%>
+		nb_line_update_<%=cid%> += stmt_<%=cid %>.getUpdateCount();
+<%
+		} else if ("NB_LINE_DELETED".equals(use_NB_Line)) {
+%>
+		nb_line_deleted_<%=cid%> += stmt_<%=cid %>.getUpdateCount();
+<%
+		}
+	}
 %>
 	} catch (java.lang.Exception e) {
 		whetherReject_<%=cid%> = true;
