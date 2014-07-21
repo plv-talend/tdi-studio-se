@@ -1,4 +1,4 @@
-<%@ jet
+<%@ jet 
 imports="
 	org.talend.designer.codegen.config.CodeGeneratorArgument
 	org.talend.core.model.process.INode
@@ -6,67 +6,90 @@ imports="
 	org.talend.core.model.process.IConnection
 	org.talend.core.model.metadata.IMetadataTable
 	org.talend.core.model.metadata.types.JavaTypesManager
-	org.talend.core.model.metadata.MappingTypeRetriever
-	org.talend.core.model.metadata.MetadataTalendType
-	org.talend.core.model.process.IProcess
+    org.talend.core.model.metadata.MappingTypeRetriever
+    org.talend.core.model.metadata.MetadataTalendType	
+    org.talend.core.model.process.IProcess
 	java.util.List
 	java.util.ArrayList
 	java.util.Map
 	java.util.HashMap
-"
+" 
 skeleton="../templates/db_output_bulk.skeleton"
 %>
-<%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
+	
 	String cid = node.getUniqueName();
 	IProcess process = node.getProcess();
+	
 	String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");
+
 	List<Map<String, String>> addCols =
-		(List<Map<String,String>>)ElementParameterParser.getObjectValue(node,"__ADD_COLS__");
-	boolean useFieldOptions = ("true").equals(ElementParameterParser.getValue(node, "__USE_FIELD_OPTIONS__"));
-	List<Map<String, String>> fieldOptions = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__FIELD_OPTIONS__");
+        (List<Map<String,String>>)ElementParameterParser.getObjectValue(node,"__ADD_COLS__");	
+	
+    boolean useFieldOptions = ("true").equals(ElementParameterParser.getValue(node, "__USE_FIELD_OPTIONS__"));
+    
+    List<Map<String, String>> fieldOptions = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__FIELD_OPTIONS__");	
+	
 	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
+	
 	String commitEvery = ElementParameterParser.getValue(node, "__COMMIT_EVERY__");
+	
 	String useExistingConn = ElementParameterParser.getValue(node,"__USE_EXISTING_CONNECTION__");
+	
 	boolean extendedInsert = false;
+	
 	boolean supportDuplicateUpdate = "true".equalsIgnoreCase(ElementParameterParser.getValue(node,"__ON_DUPLICATE_KEY_UPDATE__"));
+	
 	String dieOnError = ElementParameterParser.getValue(node, "__DIE_ON_ERROR__");
+	
 	boolean useBatchSize = ("true").equals(ElementParameterParser.getValue(node,"__USE_BATCH_SIZE__"));
+	boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(node.getProcess(), "__LOG4J_ACTIVATE__"));
+	
 	String rejectConnName = null;
 	List<? extends IConnection> rejectConns = node.getOutgoingConnections("REJECT");
 	if(rejectConns != null && rejectConns.size() > 0) {
-		IConnection rejectConn = rejectConns.get(0);
-		rejectConnName = rejectConn.getName();
+	    IConnection rejectConn = rejectConns.get(0);
+	    rejectConnName = rejectConn.getName();
 	}
+	
 	if ("INSERT".equalsIgnoreCase(dataAction)) {
 		extendedInsert = ("true").equals(ElementParameterParser.getValue(node, "__EXTENDINSERT__"));
-		//to fixed: bug8422
-		if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("talendMeter_DB"))){
-			extendedInsert = false;
-		}
+       
+        //to fixed: bug8422
+        if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("talendMeter_DB"))){
+        	extendedInsert = false;
+        }
+        		
 	}else {
 		extendedInsert = false;
-	}
+	}	
+	
 	String tableName = ElementParameterParser.getValue(node,"__TABLE__");
+	
 	String numPerInsert = ElementParameterParser.getValue(node, "__NB_ROWS_PER_INSERT__");
+    
 	String incomingConnName = null;
-	List<IMetadataColumn> columnList = getColumnList(node);
-	List< ? extends IConnection> conns = node.getIncomingConnections();
-	if(conns!=null && conns.size()>0){
-		IConnection conn = conns.get(0);
-		incomingConnName = conn.getName();
-	}
-	boolean isDynamic = false;
-	List<IMetadataTable> metadatas = node.getMetadataList();
-	if ((metadatas!=null)&&(metadatas.size()>0)) {
-		IMetadataTable metadata = metadatas.get(0);
-		isDynamic = metadata.isDynamicSchema();
-	}
-	List<Column> stmtStructure =  getManager(dbmsId, cid).createColumnList(columnList, useFieldOptions, fieldOptions, addCols);
-	isDynamic = isDynamic && !getManager(dbmsId, cid).isDynamicColumnReplaced();
-		String dbVersion = "" ;
+    List<IMetadataColumn> columnList = getColumnList(node);
+    
+    List< ? extends IConnection> conns = node.getIncomingConnections();
+    if(conns!=null && conns.size()>0){
+        IConnection conn = conns.get(0);
+        incomingConnName = conn.getName();
+    }
+    
+    boolean isDynamic = false;
+    List<IMetadataTable> metadatas = node.getMetadataList();
+    if ((metadatas!=null)&&(metadatas.size()>0)) {
+        IMetadataTable metadata = metadatas.get(0);
+		isDynamic = metadata.isDynamicSchema(); 
+    }
+    
+    List<Column> stmtStructure =  getManager(dbmsId, cid).createColumnList(columnList, useFieldOptions, fieldOptions, addCols);
+    isDynamic = isDynamic && !getManager(dbmsId, cid).isDynamicColumnReplaced();
+    
+   	String dbVersion = "" ;
 	String connection = ElementParameterParser.getValue(node,"__CONNECTION__");
 	if(("true").equals(useExistingConn)) {
 		List<? extends INode> nodes =  process.getNodesOfType("tMysqlConnection");
@@ -78,149 +101,175 @@ skeleton="../templates/db_output_bulk.skeleton"
 	} else {
 		dbVersion = ElementParameterParser.getValue(node, "__DB_VERSION__");
 	}
+		
 	if(extendedInsert){
-		if ("MYSQL_4".equals(dbVersion)) {
-			class ExtendInsertOperation{
-				public String generateType(String typeToGenerate){
-					if(("byte[]").equals(typeToGenerate)){
-						typeToGenerate = "Bytes";
-					}else if(("java.util.Date").equals(typeToGenerate)){
-						typeToGenerate = "Date";
-					}else if(("Integer").equals(typeToGenerate)){
-						typeToGenerate = "Int";
-					}else if(("List").equals(typeToGenerate)){
-						typeToGenerate = "Object";
-					}else{
-						typeToGenerate=typeToGenerate.substring(0,1).toUpperCase()+typeToGenerate.substring(1);
-					}
-					return typeToGenerate;
-				}
-				public void generateSetStmt(String typeToGenerate,Column column,String cid){
-					boolean isObject = false;
-					String prefix = "pstmt_";
-					if(("Character").equals(typeToGenerate)) {
-						isObject = true;
+		
+		if ("MYSQL_4".equals(dbVersion)) {		
+		    class ExtendInsertOperation{
+		        public String generateType(String typeToGenerate){
+		            if(("byte[]").equals(typeToGenerate)){
+		                typeToGenerate = "Bytes";
+		            }else if(("java.util.Date").equals(typeToGenerate)){
+		                typeToGenerate = "Date";
+		            }else if(("Integer").equals(typeToGenerate)){
+		                typeToGenerate = "Int";
+		            }else if(("List").equals(typeToGenerate)){  
+		                typeToGenerate = "Object";                 
+		            }else{
+		                typeToGenerate=typeToGenerate.substring(0,1).toUpperCase()+typeToGenerate.substring(1);
+		            }
+		            return typeToGenerate;
+		        }
+		        
+		        public void generateSetStmt(String typeToGenerate,Column column,String cid){
+		            boolean isObject = false;                               
+		            String prefix = "pstmt_";                             
+		            %>
+	
+		        <%
+		        if(("Character").equals(typeToGenerate)) {
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.CHAR);
+	                <%
+		        }else if(("Date").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.DATE);
+	                <%
+		        }else if(("byte[]").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.ARRAY);         
+	                <%
+		        }else if(("Long").equals(typeToGenerate)||("Byte").equals(typeToGenerate)||("Integer").equals(typeToGenerate)||("Short").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.INTEGER);
+	                <%
+		        }else if(("String").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.VARCHAR);
+	                <%
+		        }else if(("Object").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.OTHER);
+	                <%
+		        }else if(("Boolean").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.BOOLEAN);   
+	                <%
+		        }else if(("Double").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.DOUBLE);    
+	                <%
+		        }else if(("Float").equals(typeToGenerate)){
+		            isObject = true;
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.FLOAT); 
+	                <%
+		        }
+	            if(isObject){
+	                %>
+	
+	                }else{
+	
+	                <%
+	            }
+		        typeToGenerate = generateType(typeToGenerate);
+		        
+		        if(("Char").equals(typeToGenerate)||("Character").equals(typeToGenerate)){
+		            %>
+		        <%
+		        if(isObject) {
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>==null){
+		        <%
+		        } else {
+		            %>
+		            if(("null").equals(String.valueOf(bufferL<%=cid%>.<%=column.getName()%>).toLowerCase())){
+		        <%
+		        }
+	            %>
+	            <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.CHAR);
+		            
+		        } else if(bufferL<%=cid%>.<%=column.getName()%> == '\0') {
+		        
+		            <%=prefix+cid%>.setString(count<%=cid%>,"");
+		            
+		        } else {
+		            
+		            <%=prefix+cid%>.setString(count<%=cid%>,String.valueOf(bufferL<%=cid%>.<%=column.getName()%>));
+		        }
+		        <%
+		        }else if(("Date").equals(typeToGenerate)){
+		            %>
+		            if(bufferL<%=cid%>.<%=column.getName()%>!=null){
+		                // timestamp < min java date value (year 1) || timestamp > max mysql value (year 10000) => set 0000-00-00 as date in MySQL
+		                date_<%=cid %> = bufferL<%=cid%>.<%=column.getName()%>.getTime();
+		                if (date_<%=cid %> < year1_<%=cid %> || date_<%=cid %> >= year10000_<%=cid %>) {
+		                    <%=prefix+cid%>.setString(count<%=cid%>, "0000-00-00 00:00:00");
+		                } else {
+		                    <%=prefix+cid%>.setTimestamp(count<%=cid%>, new java.sql.Timestamp(date_<%=cid %>));
+		                }
+		            }else{
+		        
+		                <%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.DATE);
+		            
+		            }
+		            <%
+		        }else{
+		            %>
+		            <%=prefix+cid%>.set<%=typeToGenerate%>(count<%=cid%>,bufferL<%=cid%>.<%=column.getName()%>);
+		            <%
+		        }
+		        if(isObject){
+		            %>
+		            
+		            }
+		        
+		        <%
+		        }
+	        }
+	    }
+		ExtendInsertOperation eiOperation = new ExtendInsertOperation();
+		%>
+	  
+	
+	    if(rowCount<%=cid%>!=0){
+	
+	        StringBuilder extendInsertValueStmt = new StringBuilder();
+	        for(int i=0 ; i < rowCount<%=cid%> ; i++){
+	             extendInsertValueStmt.append("("+insertColValue<%=cid%>+")");
+	             if (i != rowCount<%=cid%> - 1) extendInsertValueStmt.append(",");
+	        }
+	        
+	
+				   insert_<%=cid%> = "INSERT INTO `"+<%=tableName%>+"` ("+insertColName<%=cid%>+") VALUES "+extendInsertValueStmt.toString();
+				   <%if (supportDuplicateUpdate) {
+				    %>
+				    <%
+				    List<Map<String, String>> duplicateKeys =
+				      			(List<Map<String,String>>)ElementParameterParser.getObjectValue(
+				          			node,"__DUPLICATED_KEYS__" );
+				          			
+						if (duplicateKeys.size() > 0) {
 						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.CHAR);
-						<%
-					}else if(("Date").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.DATE);
-						<%
-					}else if(("byte[]").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.ARRAY);
-						<%
-					}else if(("Long").equals(typeToGenerate)||("Byte").equals(typeToGenerate)||("Integer").equals(typeToGenerate)||("Short").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.INTEGER);
-						<%
-					}else if(("String").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.VARCHAR);
-						<%
-					}else if(("Object").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.OTHER);
-						<%
-					}else if(("Boolean").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.BOOLEAN);
-						<%
-					}else if(("Double").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.DOUBLE);
-						<%
-					}else if(("Float").equals(typeToGenerate)){
-						isObject = true;
-						%>
-						if(bufferL<%=cid%>.<%=column.getName()%>==null){
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.FLOAT);
-						<%
-					}
-					if(isObject){
-						%>
-						}else{
-						<%
-					}
-					typeToGenerate = generateType(typeToGenerate);
-					if(("Char").equals(typeToGenerate)||("Character").equals(typeToGenerate)){
-						if(isObject) {
-							%>
-							if(bufferL<%=cid%>.<%=column.getName()%>==null){
-						<%
-						} else {
-							%>
-							if(("null").equals(String.valueOf(bufferL<%=cid%>.<%=column.getName()%>).toLowerCase())){
-						<%
-						}
-						%>
-								<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.CHAR);
-							} else if(bufferL<%=cid%>.<%=column.getName()%> == '\0') {
-								<%=prefix+cid%>.setString(count<%=cid%>,"");
-							} else {
-								<%=prefix+cid%>.setString(count<%=cid%>,String.valueOf(bufferL<%=cid%>.<%=column.getName()%>));
-							}
-					<%
-					}else if(("Date").equals(typeToGenerate)){
-					%>
-						if(bufferL<%=cid%>.<%=column.getName()%>!=null){
-							// timestamp < min java date value (year 1) || timestamp > max mysql value (year 10000) => set 0000-00-00 as date in MySQL
-							date_<%=cid %> = bufferL<%=cid%>.<%=column.getName()%>.getTime();
-							if (date_<%=cid %> < year1_<%=cid %> || date_<%=cid %> >= year10000_<%=cid %>) {
-								<%=prefix+cid%>.setString(count<%=cid%>, "0000-00-00 00:00:00");
-							} else {
-								<%=prefix+cid%>.setTimestamp(count<%=cid%>, new java.sql.Timestamp(date_<%=cid %>));
-							}
-						}else{
-							<%=prefix+cid%>.setNull(count<%=cid%>,java.sql.Types.DATE);
-						}
-					<%
-					}else{
-					%>
-						<%=prefix+cid%>.set<%=typeToGenerate%>(count<%=cid%>,bufferL<%=cid%>.<%=column.getName()%>);
-					<%
-					}
-					if(isObject){
-					%>
-						}
-					<%
-					}
-				}
-			}
-			ExtendInsertOperation eiOperation = new ExtendInsertOperation();
-			%>
-			if(rowCount<%=cid%>!=0){
-				StringBuilder extendInsertValueStmt = new StringBuilder();
-				for(int i=0 ; i < rowCount<%=cid%> ; i++){
-					 extendInsertValueStmt.append("("+insertColValue<%=cid%>+")");
-					 if (i != rowCount<%=cid%> - 1) extendInsertValueStmt.append(",");
-				}
-				insert_<%=cid%> = "INSERT INTO `"+<%=tableName%>+"` ("+insertColName<%=cid%>+") VALUES "+extendInsertValueStmt.toString();
-				<%
-				if (supportDuplicateUpdate) {
-					List<Map<String, String>> duplicateKeys =
-				  			(List<Map<String,String>>)ElementParameterParser.getObjectValue(
-					  			node,"__DUPLICATED_KEYS__" );
-					if (duplicateKeys.size() > 0) {
-					%>
 						insert_<%=cid%> += " ON DUPLICATE KEY UPDATE ";
-						duplidateClause_<%=cid%> = new StringBuffer("");
+						duplidateClause_<%=cid%> = new StringBuffer("");	
 						<%
 						for (int i=0; i< duplicateKeys.size() ; i++) {
 							if (i >0) {
@@ -228,187 +277,224 @@ skeleton="../templates/db_output_bulk.skeleton"
 								duplidateClause_<%=cid%>.append(",");
 							<%
 							}
-							%>
+							%>						
 							duplidateClause_<%=cid%>.append ("`" +  <%=duplicateKeys.get(i).get("DUPLICATED_KEY")%> + "`");
 							duplidateClause_<%=cid%>.append ("=");
 							duplidateClause_<%=cid%>.append (<%=duplicateKeys.get(i).get("DUPLICATED_VALUE")%>);
 							<%
 						}
 						%>
-						insert_<%=cid%> += 	duplidateClause_<%=cid%>.toString();
+						insert_<%=cid%> += 	duplidateClause_<%=cid%>.toString();				
 					<%
-					}
-				}
-				%>
-				pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
-				int row2Count<%=cid%> = 0;
-				<%
-				if(isDynamic) {
-				%>
-					int count<%=cid%> = 1;
-				<%
-				} else {
-				%>
-					int count<%=cid%> = 0;
-				<%
-				}
-				%>
-				for(BufferLine_<%=cid%> bufferL<%=cid%> : exInsertColValueList<%=cid%>){
-					<%
-					if(!isDynamic) {
-					%>
-						count<%=cid%> = row2Count<%=cid%>*<%=columnList.size()%>+1;
-					<%
-					}
-					for(Column column : stmtStructure) {
-						if(!column.isReplaced() && !column.isAddCol() && column.isInsertable() && !column.isDynamic()) {
-							String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());
-							eiOperation.generateSetStmt(typeToGenerate, column, cid);
-							%>
-							count<%=cid%>++;
-							<%
 						}
-					}
-					if(isDynamic) {
-						Column dynamicColumn = getColumn(getDynamicColumn());
-						String typeToGenerate = JavaTypesManager.getTypeToGenerate(dynamicColumn.getColumn().getTalendType(), dynamicColumn.getColumn().isNullable());
-						if("Dynamic".equals(typeToGenerate)) {
-						%>
-							int count_dyn_<%=cid%>=DynamicUtils.writeColumnsToDatabse(<%=incomingConnName%>.<%=dynamicColumn.getName()%>, pstmt_<%=cid%>, count<%=cid%>-1, "<%=dbmsId%>");
-							count<%=cid%>+=count_dyn_<%=cid%>;
-						<%
-						}
-					}
-					%>
-					row2Count<%=cid%>++;
-				}
-				insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmt_<%=cid %>.executeUpdate();
-			}
+				     %>	            
+				        <%
+				       }%>
+			
+			        
+	        pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
+	        
+	        int row2Count<%=cid%> = 0;
 <%
+		if(isDynamic) {
+%>
+	        	int count<%=cid%> = 1;
+<%
+		} else {
+%>
+			int count<%=cid%> = 0;
+<%
+		}
+%>
+	        
+	        for(BufferLine_<%=cid%> bufferL<%=cid%> : exInsertColValueList<%=cid%>){            
+<%
+		if(!isDynamic) {
+%>
+	            count<%=cid%> = row2Count<%=cid%>*<%=columnList.size()%>+1;         	          
+<%   
+		}
+	            for(Column column : stmtStructure) {
+	                if(!column.isReplaced() && !column.isAddCol() && column.isInsertable() && !column.isDynamic()) {
+	                    String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());                     
+	                    eiOperation.generateSetStmt(typeToGenerate, column, cid);
+	                    %>
+	                    count<%=cid%>++;
+	                    <%
+	                }
+	            }
+		    if(isDynamic) {
+				Column dynamicColumn = getColumn(getDynamicColumn());
+				String typeToGenerate = JavaTypesManager.getTypeToGenerate(dynamicColumn.getColumn().getTalendType(), dynamicColumn.getColumn().isNullable());
+				if("Dynamic".equals(typeToGenerate)) {
+				%>
+					int count_dyn_<%=cid%>=DynamicUtils.writeColumnsToDatabse(<%=incomingConnName%>.<%=dynamicColumn.getName()%>, pstmt_<%=cid%>, count<%=cid%>-1, "<%=dbmsId%>");
+					count<%=cid%>+=count_dyn_<%=cid%>;
+				<%
+				}
+			}
+	            %>
+	    
+	            row2Count<%=cid%>++;
+	        }        
+	        insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmt_<%=cid %>.executeUpdate();
+	    }
+<%	
 		} else if ("MYSQL_5".equals(dbVersion)) {
   			//////////batch execute by batch size///////
-			if(!("").equals(numPerInsert ) && !("0").equals(numPerInsert )) {
-			%>
-				<%if ( (rejectConnName==null) && ("INSERT").equals(dataAction)) {
-				%>
-					try {
-						if (batchSizeCounter_<%=cid%> != 0) {
-							<%log4jCodeGenerateUtil.executeBatch(node,2);%>
-							<%if (("INSERT").equals(dataAction)) {
-							%>
-								insertedCount_<%=cid%> += countSum_<%=cid%>;
-							<%
-							}
-							%>
-						}
-					}catch (java.sql.BatchUpdateException e_<%=cid%>){
-						<%if(("true").equals(dieOnError)) {
-							log4jCodeGenerateUtil.logError(node,"fatal","e_"+cid);
-						%>
-							throw(e_<%=cid%>);
-						<%
-						}else {
-							log4jCodeGenerateUtil.logError(node,"error","e_"+cid);
-							%>
+    		if(!("").equals(numPerInsert ) && !("0").equals(numPerInsert )) {
+    		%>
+                <%if ( (rejectConnName==null) && ("INSERT").equals(dataAction)) {
+                %>                                                
+                try {
+                		if (batchSizeCounter_<%=cid%> != 0) {
 							int countSum_<%=cid%> = 0;
-							for(int countEach_<%=cid%>: e_<%=cid%>.getUpdateCounts()) {
+							for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
 								countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
-							}
-							<%
-							if (("INSERT").equals(dataAction)) {
-							%>
-							insertedCount_<%=cid%> += countSum_<%=cid%>;
-							<%
-							}
-							%>
-							System.err.println(e_<%=cid%>.getMessage());
-						<%
-						}
-						%>
-					}
-					batchSizeCounter_<%=cid%> = 0;
-				<%
-				}
-				%>
-			<%
-			}
-		}
-	}
-	if(("INSERT_OR_UPDATE").equals(dataAction)) {
-		%>
-		if(pstmtUpdate_<%=cid%> != null){
-			pstmtUpdate_<%=cid %>.close();
-		}
-		if(pstmtInsert_<%=cid %> != null){
-			pstmtInsert_<%=cid %>.close();
-		}
-		if(pstmt_<%=cid %> != null) {
-			pstmt_<%=cid %>.close();
-		}
-		<%
-	} else if(("UPDATE_OR_INSERT").equals(dataAction)) {
-		%>
-		if(pstmtUpdate_<%=cid%> != null){
-			pstmtUpdate_<%=cid %>.close();
-		}
-		if(pstmtInsert_<%=cid %> != null){
-			pstmtInsert_<%=cid %>.close();
-		}
-		<%
-	} else {
-		if ((rejectConnName==null && "MYSQL_5".equals(dbVersion) && useBatchSize) && ( ("INSERT").equals(dataAction) ||("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
-		%>
-			try {
-				if(pstmt_<%=cid %> != null){
-					<%log4jCodeGenerateUtil.executeBatch(node,2);%>
-					<%if (("INSERT").equals(dataAction)) {
-					%>
-						insertedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}else if (("UPDATE").equals(dataAction)) {
-					%>
-						updatedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}else if (("DELETE").equals(dataAction)) {
-					%>
-						deletedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}%>
-				}
-			}catch (java.sql.BatchUpdateException e){
-				<%if(("true").equals(dieOnError)) {
-					log4jCodeGenerateUtil.logError(node,"fatal");
-				%>
-					throw(e);
-				<%
-				}else {
-					log4jCodeGenerateUtil.logError(node,"error");
-					%>
-					int countSum_<%=cid%> = 0;
+							}                	
+	            	    	<%if (("INSERT").equals(dataAction)) {
+	            	    	%>
+	            	    		insertedCount_<%=cid%> += countSum_<%=cid%>;
+	            	    	<%
+	            	    	}
+	            	    	%>                         	    	
+            	    	}
+            	    		
+                }catch (java.sql.BatchUpdateException e){
+                	<%if(("true").equals(dieOnError)) {
+                	%>
+						<%if(isLog4jEnabled){%>
+							log.fatal("<%=cid%> - " + e.getMessage());
+						<%}%>
+                		throw(e);
+                	<%
+                	}else {
+                	%>
+					<%if(isLog4jEnabled){%>
+						log.error("<%=cid%> - " + e.getMessage());
+					<%}%>
+                	int countSum_<%=cid%> = 0;
 					for(int countEach_<%=cid%>: e.getUpdateCounts()) {
 						countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
 					}
 					<%if (("INSERT").equals(dataAction)) {
-					%>
-						insertedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}else if (("UPDATE").equals(dataAction)) {
-					%>
-						updatedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}else if (("DELETE").equals(dataAction)) {
-					%>
-						deletedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}%>
-					System.out.println(e.getMessage());
-				<%
-				}%>
-			}
-		<%
+            	    %>
+            	    insertedCount_<%=cid%> += countSum_<%=cid%>;
+	    	    	<%
+	    	    	}
+	    	    	%> 
+                	System.err.println(e.getMessage());
+                	<%
+                	}%>
+                }
+                batchSizeCounter_<%=cid%> = 0;    
+                <%
+                }
+                %>    			
+    		<%	
+    		}
 		}
-		%>
-		if(pstmt_<%=cid %> != null) {
+	}
+	
+    if(("INSERT_OR_UPDATE").equals(dataAction)) {
+        %>
+        if(pstmtUpdate_<%=cid%> != null){
+
+            pstmtUpdate_<%=cid %>.close();
+            
+        } 
+        if(pstmtInsert_<%=cid %> != null){
+
+            pstmtInsert_<%=cid %>.close();
+            
+        }
+        if(pstmt_<%=cid %> != null) {
+
+            pstmt_<%=cid %>.close();
+            
+        }        
+        <%
+    } else if(("UPDATE_OR_INSERT").equals(dataAction)) {
+        %>
+        if(pstmtUpdate_<%=cid%> != null){
+
+            pstmtUpdate_<%=cid %>.close();
+            
+        } 
+        if(pstmtInsert_<%=cid %> != null){
+
+            pstmtInsert_<%=cid %>.close();
+            
+        }        
+        <%
+    } else {
+        %>
+	<%if ((rejectConnName==null && "MYSQL_5".equals(dbVersion) && useBatchSize) && ( ("INSERT").equals(dataAction) ||("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
+    %>                
+    try {
+    	if(pstmt_<%=cid %> != null){
+			int countSum_<%=cid%> = 0;
+			<%if (isLog4jEnabled) {%>
+				log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
+			<%}%>
+			for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
+				countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+			}       	
+			<%if (isLog4jEnabled) {%>						
+				log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
+			<%}%>
+	    	<%if (("INSERT").equals(dataAction)) {
+	    	%>
+	    		insertedCount_<%=cid%> += countSum_<%=cid%>; 
+	    	<%
+	    	}else if (("UPDATE").equals(dataAction)) {
+	    	%>
+	    		updatedCount_<%=cid%> += countSum_<%=cid%>;
+	    	<%
+	    	}else if (("DELETE").equals(dataAction)) {
+	    	%>
+	    	    deletedCount_<%=cid%> += countSum_<%=cid%>;
+	    	<%
+	    	}%>            	    
+	    }
+    }catch (java.sql.BatchUpdateException e){
+    	<%if(("true").equals(dieOnError)) {
+    	%>
+			<%if(isLog4jEnabled){%>
+				log.fatal("<%=cid%> - " + e.getMessage());
+			<%}%>
+    		throw(e);
+    	<%
+    	}else {
+    	%>
+		<%if(isLog4jEnabled){%>
+			log.error("<%=cid%> - " + e.getMessage());
+		<%}%>
+    	int countSum_<%=cid%> = 0;
+		for(int countEach_<%=cid%>: e.getUpdateCounts()) {
+			countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+		}
+		<%if (("INSERT").equals(dataAction)) {
+    	%>
+    	insertedCount_<%=cid%> += countSum_<%=cid%>;
+    	<%
+    	}else if (("UPDATE").equals(dataAction)) {
+    	%>            	    		
+    	updatedCount_<%=cid%> += countSum_<%=cid%>;
+    	<%
+    	}else if (("DELETE").equals(dataAction)) {
+    	%>
+    	deletedCount_<%=cid%> += countSum_<%=cid%>;
+    	<%
+    	}%>
+    	System.out.println(e.getMessage());
+    	<%
+    	}%>                	
+	}                                  
+    <%
+    }%>  
+    
+        if(pstmt_<%=cid %> != null) {
 			<%
 			//to fixed: bug8422
 			if(!(cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("talendMeter_DB"))){
@@ -417,27 +503,78 @@ skeleton="../templates/db_output_bulk.skeleton"
 			<%
 			}else{
 			%>
-				SharedDBPreparedStatement.releasePreparedStatement(keyPsmt_<%=cid%>);
+				SharedDBPreparedStatement.releasePreparedStatement(keyPsmt_<%=cid%>);   
 			<%
 			}
-			%>
-		}
-	<%
-	}
+			%>              
+        }        
+        <%
+    }   
+    %>
+
+    <%
 	if(!("true").equals(useExistingConn)){
 		if(!("").equals(commitEvery) && !("0").equals(commitEvery))
 		{
-		%>
-			if(commitCounter_<%=cid%> > 0){
-				<%log4jCodeGenerateUtil.commit(node);%>
-			}
-		<%
+    		%>
+			<%if(isLog4jEnabled){%>
+				log.debug("<%=cid%> - Starting to commit " + commitCounter_<%=cid %> + " records.");
+			<%}%>
+    		conn_<%=cid%>.commit();
+			<%if(isLog4jEnabled){%>
+				log.debug("<%=cid%> - Commit has succeeded.");
+			<%}%>
+    		<%
 		}
+	
 		commitEvery = "0";
-		log4jCodeGenerateUtil.close(node);
-		%>
-		resourceMap.put("finish_<%=cid%>", true);
-	<%
+    	%>	
+		<%if(isLog4jEnabled){%>
+			log.info("<%=cid%> - Closing the connection to the database.");
+		<%}%>
+    	conn_<%=cid%> .close();
+    	resourceMap.put("finish_<%=cid%>", true);
+		<%if(isLog4jEnabled){%>
+			log.info("<%=cid%> - Connection to the database closed.");
+		<%}%>
+    	<%
 	}
-	%>
+%>
+
 <%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>
+    
+<%
+	if(isLog4jEnabled){
+		if (("INSERT").equals(dataAction)) { 
+%>
+		log.info("<%=cid%> - Has inserted " + nb_line_inserted_<%=cid%> + " records.");
+<%
+		} else if (("UPDATE").equals(dataAction)) {
+%>
+	  	log.info("<%=cid%> - Has updated " + nb_line_update_<%=cid%> + " records.");
+<%
+		} else if (("DELETE").equals(dataAction)) {
+%>
+	  	log.info("<%=cid%> - Has deleted " + nb_line_deleted_<%=cid%> + " records.");
+<%
+		} else if (("INSERT_OR_UPDATE").equals(dataAction)) {
+%>
+	  	log.info("<%=cid%> - Has inserted " + nb_line_inserted_<%=cid%> + " records.");
+	  	log.info("<%=cid%> - Has updated " + nb_line_update_<%=cid%> + " records.");
+<%
+		} else if (("UPDATE_OR_INSERT").equals(dataAction)) {
+%>
+	  	log.info("<%=cid%> - Has updated " + nb_line_update_<%=cid%> + " records.");
+	  	log.info("<%=cid%> - Has inserted " + nb_line_inserted_<%=cid%> + " records.");
+<%
+		}
+	    if (rejectConnName!=null) {
+%>
+		log.info("<%=cid%> - Has rejected " + nb_line_rejected_<%=cid%> + "records.");
+<%
+		}
+%>
+		log.info("<%=cid%> - Done.");
+<%
+	}
+%>

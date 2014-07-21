@@ -7,7 +7,7 @@ imports="
 	java.util.List
 "
 %>
-<%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
+
 <%
 CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 INode node = (INode) codeGenArgument.getArgument();
@@ -68,26 +68,23 @@ if(("INSERT_OR_UPDATE").equals(dataAction)) {
 				int countSum_<%=cid%> = 0;
                 try {
                 	if(pstmt_<%=cid %>!=null && batchSizeCounter_<%=cid%> > 0 ){
-						<%log4jCodeGenerateUtil.logInfo(node,"debug",cid+" - Executing the "+dataAction+" batch.");%>
-						for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
+						status_<%=cid%> = pstmt_<%=cid %>.executeBatch();
+						for(int countEach_<%=cid%>: status_<%=cid%>) {
 							countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
 						}
-						<%log4jCodeGenerateUtil.logInfo(node,"debug",cid+" - The "+dataAction+" batch execution has succeeded.");%>
             	    }
-                }catch (java.sql.BatchUpdateException e_<%=cid%>){
+                }catch (java.sql.BatchUpdateException e){
                 	<%
                 	if(("true").equals(dieOnError)) {
-	                	log4jCodeGenerateUtil.logError(node,"fatal","e_"+cid);
-						%>
-						throw(e_<%=cid%>);
-					<%
-					} else {
-						log4jCodeGenerateUtil.logError(node,"error","e_"+cid);
-                		%>
-						for(int countEach_<%=cid%>: e_<%=cid%>.getUpdateCounts()) {
-							countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
-						}
-	                	System.out.println(e_<%=cid%>.getMessage());
+                	%>
+                		throw(e);
+                	<%
+                	}else {
+                	%>
+					for(int countEach_<%=cid%>: e.getUpdateCounts()) {
+						countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+					}
+                	System.out.println(e.getMessage());
                 	<%
                 	}
                 	%>                	
@@ -96,7 +93,7 @@ if(("INSERT_OR_UPDATE").equals(dataAction)) {
         			try {
         				tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();
 					}catch (java.sql.SQLException e){
-						<%log4jCodeGenerateUtil.logError(node,"warn");%>
+	                	                	
 					} 
 					tmp_batchUpdateCount_<%=cid%> = tmp_batchUpdateCount_<%=cid%> > countSum_<%=cid%> ? tmp_batchUpdateCount_<%=cid%> : countSum_<%=cid%>;
         	    	<%if (("INSERT").equals(dataAction)) {
@@ -117,7 +114,9 @@ if(("INSERT_OR_UPDATE").equals(dataAction)) {
 	}//--------end batch
 %>    
     if(pstmt_<%=cid %> != null) {
-		pstmt_<%=cid %>.close();
+
+        pstmt_<%=cid %>.close();
+        
     }        
     <%
 }
@@ -128,10 +127,12 @@ String useExistingConn = ElementParameterParser.getValue(node,"__USE_EXISTING_CO
 if(("false").equals(useExistingConn)){
 	// Commit if needed
 	if (!("").equals(commitEvery) && !("0").equals(commitEvery)) {
-		log4jCodeGenerateUtil.commit(node);
+	    %>
+	    connection_<%=cid%>.commit();
+	    <%
 	}
-	log4jCodeGenerateUtil.close(node);
 	%>
+	connection_<%=cid%>.close();
 	resourceMap.put("finish_<%=cid%>", true);
 	<%
 }

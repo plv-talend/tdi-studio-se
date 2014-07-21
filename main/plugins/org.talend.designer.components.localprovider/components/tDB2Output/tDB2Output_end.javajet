@@ -7,7 +7,6 @@ imports="
 	java.util.List
 " 
 %>
-<%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
@@ -63,70 +62,75 @@ imports="
         }        
         <%
     } else {
-		if ((rejectConnName==null && useBatchSize) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
-		%>
-		    try {
-		    	<%
-		    	log4jCodeGenerateUtil.executeBatch(node,2);
-		    	if (("INSERT").equals(dataAction)) {
-		    	%>
-		    		insertedCount_<%=cid%> += countSum_<%=cid%>; 
-		    	<%
-		    	}else if (("UPDATE").equals(dataAction)) {
-		    	%>
-		    		updatedCount_<%=cid%> += countSum_<%=cid%>;
-		    	<%
-		    	}else if (("DELETE").equals(dataAction)) {
-		    	%>
-		    	    deletedCount_<%=cid%> += countSum_<%=cid%>;
-		    	<%
-		    	}%>   
-		    }catch (java.sql.BatchUpdateException e_<%=cid%>){
-		    	<%if(("true").equals(dieOnError)) {
-		    		log4jCodeGenerateUtil.logError(node,"fatal","e_"+cid);
-		    	%>
-		    		throw(e_<%=cid%>);
-		    	<%
-		    	}else {
-		    		log4jCodeGenerateUtil.logError(node,"error","e_"+cid);
-		    		%>
-		    		int countSum_<%=cid%> = 0;
-					for(int countEach_<%=cid%>: e_<%=cid%>.getUpdateCounts()) {
-						countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
-					}
-		    		<%
-					if (("INSERT").equals(dataAction)) {
-			    	%>
-			    		insertedCount_<%=cid%> += countSum_<%=cid%>; 
-			    	<%
-			    	}else if (("UPDATE").equals(dataAction)) {
-			    	%>
-			    		updatedCount_<%=cid%> += countSum_<%=cid%>;
-			    	<%
-			    	}else if (("DELETE").equals(dataAction)) {
-			    	%>
-			    	    deletedCount_<%=cid%> += countSum_<%=cid%>;
-			    	<%
-			    	}%> 
-			    	System.out.println(e_<%=cid%>.getMessage());
-		    	<%
-		    	}
-		    	%>
+        %>
+      <%if ((rejectConnName==null && useBatchSize) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
+    %>                
+    try {
+			int countSum_<%=cid%> = 0;
+			if (pstmt_<%=cid %> != null) {
+				for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
+					countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+				}                 	
 			}
-	    <%
-	    }
-	    %>
+	    	<%if (("INSERT").equals(dataAction)) {
+	    	%>
+	    		insertedCount_<%=cid%> += countSum_<%=cid%>; 
+	    	<%
+	    	}else if (("UPDATE").equals(dataAction)) {
+	    	%>
+	    		updatedCount_<%=cid%> += countSum_<%=cid%>;
+	    	<%
+	    	}else if (("DELETE").equals(dataAction)) {
+	    	%>
+	    	    deletedCount_<%=cid%> += countSum_<%=cid%>;
+	    	<%
+	    	}%>            	    
+    }catch (java.sql.BatchUpdateException e){
+    	<%if(("true").equals(dieOnError)) {
+    	%>
+    		throw(e);
+    	<%
+    	}else {
+    	%>
+    	int countSum_<%=cid%> = 0;
+		for(int countEach_<%=cid%>: e.getUpdateCounts()) {
+			countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+		}
+		<%if (("INSERT").equals(dataAction)) {
+    	%>
+    		insertedCount_<%=cid%> += countSum_<%=cid%>; 
+    	<%
+    	}else if (("UPDATE").equals(dataAction)) {
+    	%>
+    		updatedCount_<%=cid%> += countSum_<%=cid%>;
+    	<%
+    	}else if (("DELETE").equals(dataAction)) {
+    	%>
+    	    deletedCount_<%=cid%> += countSum_<%=cid%>;
+    	<%
+    	}%> 
+    	System.out.println(e.getMessage());
+    	<%
+    	}%>                	
+	}                                  
+    <%
+    }%>   
+                
         if(pstmt_<%=cid %> != null) {
+
             pstmt_<%=cid %>.close();
+            
         }        
-	<%
-    }
+        <%
+    }   
     if(!("true").equals(useExistingConn)) {
         if(!("").equals(commitEvery) && !("0").equals(commitEvery)) {
-        	log4jCodeGenerateUtil.commit(node);
-        }
-        log4jCodeGenerateUtil.close(node);
         %>
+            conn_<%=cid%>.commit();
+        <%
+        }        
+        %>
+        conn_<%=cid%> .close();
         resourceMap.put("finish_<%=cid%>", true);
     <%
 	}

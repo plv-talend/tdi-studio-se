@@ -10,7 +10,6 @@ imports="
 	nb_line_inserted_<%=cid%>=nb_line_inserted_<%=cid%> + insertedCount_<%=cid%>;
 	nb_line_rejected_<%=cid%>=nb_line_rejected_<%=cid%> + rejectedCount_<%=cid%>;
 <%
-	boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(node.getProcess(), "__LOG4J_ACTIVATE__"));
 	boolean isEnableParallelize ="true".equalsIgnoreCase(ElementParameterParser.getValue(node, "__PARALLELIZE__"));
 	if (isEnableParallelize) {
 %>
@@ -49,38 +48,5 @@ imports="
     globalMap.put("<%=cid %>_NB_LINE_REJECTED", nb_line_rejected_<%=cid%>);
     
 <%
-	}
-	if(isLog4jEnabled){
-		if (("INSERT").equals(dataAction)) { 
-	%>
-		log.info("<%=cid%> - Has inserted " + nb_line_inserted_<%=cid%> + " records.");
-	<%
-		} else if (("UPDATE").equals(dataAction)) {
-	%>
-	  	log.info("<%=cid%> - Has updated " + nb_line_update_<%=cid%> + " records.");
-	<%
-		} else if (("DELETE").equals(dataAction)) {
-	%>
-	  	log.info("<%=cid%> - Has deleted " + nb_line_deleted_<%=cid%> + " records.");
-	<%
-		} else if (("INSERT_OR_UPDATE").equals(dataAction)) {
-	%>
-	  	log.info("<%=cid%> - Has inserted " + nb_line_inserted_<%=cid%> + " records.");
-	  	log.info("<%=cid%> - Has updated " + nb_line_update_<%=cid%> + " records.");
-	<%
-		} else if (("UPDATE_OR_INSERT").equals(dataAction)) {
-	%>
-	  	log.info("<%=cid%> - Has updated " + nb_line_update_<%=cid%> + " records.");
-	  	log.info("<%=cid%> - Has inserted " + nb_line_inserted_<%=cid%> + " records.");
-	<%
-		}
-	    if (rejectConnName!=null) {
-	%>
-		log.info("<%=cid%> - Has rejected " + nb_line_rejected_<%=cid%> + "records.");
-	<%
-		}
-	%>
-		log.info("<%=cid%> - Done.");
-	<%
 	}
 %>

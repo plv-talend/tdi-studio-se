@@ -1,4 +1,4 @@
-<%@ jet
+<%@ jet 
 imports="
 	org.talend.designer.codegen.config.CodeGeneratorArgument
 	org.talend.core.model.process.INode
@@ -6,16 +6,21 @@ imports="
 	org.talend.core.model.utils.NodeUtil
 	org.talend.core.model.process.IConnection
 	java.util.List
-"
+" 
 %>
-<%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
+
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
+	
 	String cid = node.getUniqueName();
+	
 	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
+	
 	String commitEvery = ElementParameterParser.getValue(node, "__COMMIT_EVERY__");
+	
 	String dieOnError = ElementParameterParser.getValue(node, "__DIE_ON_ERROR__");
+	
 	 boolean useExistingConnection = "true".equals(ElementParameterParser.getValue(node,"__USE_EXISTING_CONNECTION__"));
 	String rejectConnName = null;
 	List<? extends IConnection> rejectConns = node.getOutgoingConnections("REJECT");
@@ -24,114 +29,126 @@ imports="
 		rejectConnName = rejectConn.getName();
 	}
 	boolean manualCommit = !useExistingConnection && !("0").equals(commitEvery);
+%>
+<%
 	//batch mode
 	if (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction)) {
 		boolean batchMode = ("true").equals(ElementParameterParser.getValue(node, "__BATCH_MODE__"));
 		boolean executeBatch = rejectConnName==null && (batchMode||manualCommit);
 		if(executeBatch) {
 			if(batchMode) {
-			%>
-			if (pstmt_<%=cid %> !=null && batchSizeCounter_<%=cid%> > 0 ) {
-			<%
+%>
+			if (pstmt_<%=cid %> !=null && batchSizeCounter_<%=cid%> > 0 ) { 
+<%
 			} else if (!useExistingConnection) { //use batch is not ticked
-			%>
+%>
 			if (pstmt_<%=cid %> !=null && commitCounter_<%=cid%> > 0 ) {
-			<%
+<%
 			}else {
-			%>
+%>
 			if (pstmt_<%=cid %> !=null) {
-			<%
-			}
+<%
+			} 
+%> 
+	try {
+			pstmt_<%=cid %>.executeBatch();
+			<%if (("INSERT").equals(dataAction)) {
 			%>
-				try {
-					<%log4jCodeGenerateUtil.executeBatch(node,1);%>
-					<%if (("INSERT").equals(dataAction)) {
-					%>
-						insertedCount_<%=cid%> +=pstmt_<%=cid %>.getUpdateCount();
-					<%
-					}else if (("UPDATE").equals(dataAction)) {
-					%>
-						updatedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
-					<%
-					}else if (("DELETE").equals(dataAction)) {
-					%>
-						deletedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
-					<%
-					}%>
-				}catch (java.sql.BatchUpdateException e){
-					<%
-					if(("true").equals(dieOnError)) {
-						log4jCodeGenerateUtil.logError(node,"fatal");
-					%>
-						throw(e);
-					<%
-					}else {
-						log4jCodeGenerateUtil.logError(node,"error");
-					%>
-						System.out.println(e.getMessage());
-					<%
-					}
-					%>
-				}
+				insertedCount_<%=cid%> +=pstmt_<%=cid %>.getUpdateCount(); 
+			<%
+			}else if (("UPDATE").equals(dataAction)) {
+			%>
+				updatedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+			<%
+			}else if (("DELETE").equals(dataAction)) {
+			%>
+				deletedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+			<%
+			}%>
+	}catch (java.sql.BatchUpdateException e){
+		<%
+			if(("true").equals(dieOnError)) {
+		%>
+			throw(e);
+		<%
+			}else {
+		%>
+		System.out.println(e.getMessage());
+		<%
+			}
+		%>					
+	}
+	}
+<%
+		}
+	}
+%>
+	<%if(!useExistingConnection && ("INSERT_OR_UPDATE").equals(dataAction)){%>
+		pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
+		pstmtInsert_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
+		pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
+		pstmt_<%=cid%>.executeUpdate();
+		pstmtInsert_<%=cid %>.executeUpdate();
+		pstmtUpdate_<%=cid%>.executeUpdate();
+	<%}else if(!useExistingConnection && ("UPDATE_OR_INSERT").equals(dataAction)){%>
+		pstmtInsert_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
+		pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
+		pstmtInsert_<%=cid %>.executeUpdate();
+		pstmtUpdate_<%=cid%>.executeUpdate();
+	<%}else{%>
+		<%
+		 if(!useExistingConnection && !"COPY".equals(dataAction))	{
+		 %>
+		pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
+		pstmt_<%=cid%>.executeUpdate();
+	<%
+		}
+	}
+
+	
+	if(("INSERT_OR_UPDATE").equals(dataAction)) {
+		%>
+		if(pstmtUpdate_<%=cid%> != null){
+
+			pstmtUpdate_<%=cid %>.close();
+			
+		} 
+		if(pstmtInsert_<%=cid %> != null){
+
+			pstmtInsert_<%=cid %>.close();
+			
+		}
+		if(pstmt_<%=cid %> != null) {
+
+			pstmt_<%=cid %>.close();
+			
+		}
+		<%
+	} else if(("UPDATE_OR_INSERT").equals(dataAction)) {
+		%>
+		if(pstmtUpdate_<%=cid%> != null){
+
+			pstmtUpdate_<%=cid %>.close();
+			
+		} 
+		if(pstmtInsert_<%=cid %> != null){
+
+			pstmtInsert_<%=cid %>.close();
+			
+		}
+		<%
+	} else {
+		if (!"COPY".equals(dataAction)) {
+		%>
+			if(pstmt_<%=cid %> != null) {
+	
+				pstmt_<%=cid %>.close();
+				
 			}
 		<%
 		}
 	}
 
-	if(!useExistingConnection && ("INSERT_OR_UPDATE").equals(dataAction)){
-	%>
-		pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
-		pstmtInsert_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
-		pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
-		pstmt_<%=cid%>.executeUpdate();
-		pstmtInsert_<%=cid %>.executeUpdate();
-		pstmtUpdate_<%=cid%>.executeUpdate();
-	<%
-	}else if(!useExistingConnection && ("UPDATE_OR_INSERT").equals(dataAction)){
-	%>
-		pstmtInsert_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
-		pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
-		pstmtInsert_<%=cid %>.executeUpdate();
-		pstmtUpdate_<%=cid%>.executeUpdate();
-	<%
-	}else{
-		if(!useExistingConnection && !"COPY".equals(dataAction))	{
-		%>
-		pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement("COMMIT;");
-		pstmt_<%=cid%>.executeUpdate();
-		<%
-		}
-	}
-	if(("INSERT_OR_UPDATE").equals(dataAction)) {
-	%>
-		if(pstmtUpdate_<%=cid%> != null){
-			pstmtUpdate_<%=cid %>.close();
-		}
-		if(pstmtInsert_<%=cid %> != null){
-			pstmtInsert_<%=cid %>.close();
-		}
-		if(pstmt_<%=cid %> != null) {
-			pstmt_<%=cid %>.close();
-		}
-	<%
-	} else if(("UPDATE_OR_INSERT").equals(dataAction)) {
-	%>
-		if(pstmtUpdate_<%=cid%> != null){
-			pstmtUpdate_<%=cid %>.close();
-		}
-		if(pstmtInsert_<%=cid %> != null){
-			pstmtInsert_<%=cid %>.close();
-		}
-	<%
-	} else {
-		if (!"COPY".equals(dataAction)) {
-	%>
-			if(pstmt_<%=cid %> != null) {
-				pstmt_<%=cid %>.close();
-			}
-		<%
-		}
-	}
 	//////////////// Copy Action //////////////////////
 	if ("COPY".equals(dataAction)) { // COPY
 		String db_version = ElementParameterParser.getValue(node,"__DB_VERSION__");
@@ -142,69 +159,62 @@ imports="
 				db_version = ElementParameterParser.getValue(con_node,"__DB_VERSION__");
 			}
 		}
-		%>
-		if (stmtBuilder_<%=cid%> != null && stmtBuilder_<%=cid%>.length() != 0 ) {
-			try {
-				java.io.ByteArrayInputStream bais_<%=cid%> = new ByteArrayInputStream(stmtBuilder_<%=cid%>.toString().getBytes());
-				<%
-				if("VERTICA_7_0_X".equals(db_version) || "VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)){
-				%>
-					com.vertica.jdbc.VerticaCopyStream vcs_<%=cid%> = new com.vertica.jdbc.VerticaCopyStream((com.vertica.jdbc.VerticaConnection)conn_<%=cid%>,template_<%=cid%>);
-					vcs_<%=cid%>.start();
-					vcs_<%=cid%>.addStream(bais_<%=cid%>);
-					vcs_<%=cid%>.execute();
-					vcs_<%=cid%>.finish();
-					copiedCount_<%=cid%> +=vcs_<%=cid%>.getRowCount();
-					vcs_<%=cid%> = null;
-				<%
-				}else{
-				%>
-					((com.vertica.PGStatement)stmt_<%=cid%>).executeCopyIn(template_<%=cid%>, bais_<%=cid%>);
-					copiedCount_<%=cid%> +=stmt_<%=cid %>.getUpdateCount();
-					if (stmt_<%=cid%> != null) {
-						stmt_<%=cid%>.close();
-						stmt_<%=cid%> = null;
-					}
-				<%
-				}
-				%>
-				if (bais_<%=cid%> != null ) {
-					bais_<%=cid%>.close();
-					bais_<%=cid%> = null;
-				}
-				stmtBuilder_<%=cid%> = null;
-			}catch (java.sql.SQLException e){
-				<%if(("true").equals(dieOnError)) {
-					log4jCodeGenerateUtil.logError(node,"fatal");
-				%>
-					throw(e);
-				<%
-				}else {
-					log4jCodeGenerateUtil.logError(node,"error");
-				%>
-					System.out.println(e.getMessage());
-				<%
-				}
-				%>
+%>
+	if (stmtBuilder_<%=cid%> != null && stmtBuilder_<%=cid%>.length() != 0 ) {
+		try {
+			java.io.ByteArrayInputStream bais_<%=cid%> = new ByteArrayInputStream(stmtBuilder_<%=cid%>.toString().getBytes());
+				<%if("VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)){%>
+			com.vertica.jdbc.VerticaCopyStream vcs_<%=cid%> = new com.vertica.jdbc.VerticaCopyStream((com.vertica.jdbc.VerticaConnection)conn_<%=cid%>,template_<%=cid%>);
+			vcs_<%=cid%>.start();
+			vcs_<%=cid%>.addStream(bais_<%=cid%>);
+			vcs_<%=cid%>.execute();
+			vcs_<%=cid%>.finish();
+			copiedCount_<%=cid%> +=vcs_<%=cid%>.getRowCount();
+			vcs_<%=cid%> = null;
+				<%}else{%>
+			((com.vertica.PGStatement)stmt_<%=cid%>).executeCopyIn(template_<%=cid%>, bais_<%=cid%>);
+			copiedCount_<%=cid%> +=stmt_<%=cid %>.getUpdateCount(); 
+			if (stmt_<%=cid%> != null) {
+				stmt_<%=cid%>.close();
+				stmt_<%=cid%> = null;
 			}
-		}
-	<%
+				<%}%>
+			if (bais_<%=cid%> != null ) {
+				bais_<%=cid%>.close();
+				bais_<%=cid%> = null;
+			}
+			stmtBuilder_<%=cid%> = null;
+		}catch (java.sql.SQLException e){
+			<%if(("true").equals(dieOnError)) {
+			%>
+				throw(e);
+			<%
+			}else {
+			%>
+				System.out.println(e.getMessage());
+			<%
+			}%>
+		}  
+	}
+<%
 	}
 	/////// commit end/////////////
 	if(!useExistingConnection) {
 		if(!("").equals(commitEvery)&&!("0").equals(commitEvery)){
-		%>
+			%>
 			if (commitCounter_<%=cid%> > 0 ) {
-				<%log4jCodeGenerateUtil.commit(node);%>
+				conn_<%=cid%>.commit();
 			}
-		<%
+			<%
 		}
-		log4jCodeGenerateUtil.close(node);
 		%>
-		resourceMap.put("finish_<%=cid%>", true);
+		 conn_<%=cid%>.close();
+		 resourceMap.put("finish_<%=cid%>", true);
 	<%
 	}
 	%>
+
 <%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>
+
 	nb_line_copied_<%=cid%>=nb_line_copied_<%=cid%> + copiedCount_<%=cid%>;
 	globalMap.put("<%=cid %>_NB_LINE_COPIED",nb_line_copied_<%=cid%>);

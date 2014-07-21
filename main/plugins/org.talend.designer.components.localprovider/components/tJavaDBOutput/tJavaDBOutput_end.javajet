@@ -1,9 +1,74 @@
-<%@ include file="../templates/DB/Output/AbstractDBOutputEnd.javajet"%>
+<%@ jet 
+imports="
+	org.talend.designer.codegen.config.CodeGeneratorArgument
+	org.talend.core.model.process.INode
+	org.talend.core.model.process.ElementParameterParser
+" 
+%>
 <%
+	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+	INode node = (INode)codeGenArgument.getArgument();
+	
+	String cid = node.getUniqueName();
+	
+	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
+	
+	String commitEvery = ElementParameterParser.getValue(node, "__COMMIT_EVERY__");
+	
 	String frameworkType = ElementParameterParser.getValue(node,"__FRAMEWORK_TYPE__");
 	
 	String connectionFlag = ElementParameterParser.getValue(node, "__CONNECTION_FLAG__");	
-	if(("EMBEDED").equals(frameworkType))
+	
+    if(!("").equals(commitEvery)&&!("0").equals(commitEvery)){
+        %>
+        conn_<%=cid%>.commit();
+        <%
+    }
+    
+    if(("INSERT_OR_UPDATE").equals(dataAction)) {
+        %>
+        if(pstmtUpdate_<%=cid%> != null){
+
+            pstmtUpdate_<%=cid %>.close();
+            
+        } 
+        if(pstmtInsert_<%=cid %> != null){
+
+            pstmtInsert_<%=cid %>.close();
+            
+        }
+        if(pstmt_<%=cid %> != null) {
+
+            pstmt_<%=cid %>.close();
+            
+        }        
+        <%
+    } else if(("UPDATE_OR_INSERT").equals(dataAction)) {
+        %>
+        if(pstmtUpdate_<%=cid%> != null){
+
+            pstmtUpdate_<%=cid %>.close();
+            
+        } 
+        if(pstmtInsert_<%=cid %> != null){
+
+            pstmtInsert_<%=cid %>.close();
+            
+        }        
+        <%
+    } else {
+        %>
+        if(pstmt_<%=cid %> != null) {
+
+            pstmt_<%=cid %>.close();
+            
+        }        
+        <%
+    }   
+    %>
+    conn_<%=cid%> .close();
+    <%
+    if(("EMBEDED").equals(frameworkType))
     {%>
     	try
     	{
@@ -31,4 +96,8 @@
     	<%
     	}
     }
-%>
+    %>
+	resourceMap.put("finish_<%=cid%>", true);
+	
+	int rejectedCount_<%=cid%> = 0;
+<%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>

@@ -1,105 +1,131 @@
-<%@ jet
+<%@ jet 
 imports="
 	org.talend.designer.codegen.config.CodeGeneratorArgument
 	org.talend.core.model.process.INode
 	org.talend.core.model.process.ElementParameterParser
 	org.talend.core.model.process.IConnection
 	java.util.List
-"
+" 
 %>
-<%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
+	
 	String cid = node.getUniqueName();
+	
 	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
+	
 	String commitEvery = ElementParameterParser.getValue(node, "__COMMIT_EVERY__");
+	
 	boolean useTransaction = ("true").equals(ElementParameterParser.getValue(node,"__USE_TRANSACTION__"));
+	
 	boolean useExistingConnection = ("true").equals(ElementParameterParser.getValue(node, "__USE_EXISTING_CONNECTION__"));
+	
 	String dieOnError = ElementParameterParser.getValue(node, "__DIE_ON_ERROR__");
+	
 	String useBatchSize = ElementParameterParser.getValue(node, "__USE_BATCH_SIZE__");
+	
 	//------get first reject name
 	String rejectConnName = null;
-	List<? extends IConnection> rejectConns = node.getOutgoingConnections("REJECT");
-	if(rejectConns != null && rejectConns.size() > 0) {
-		IConnection rejectConn = rejectConns.get(0);
-		rejectConnName = rejectConn.getName();
-	}
-	if(("INSERT_OR_UPDATE").equals(dataAction)) {
-		%>
-		if(pstmtUpdate_<%=cid%> != null){
-			pstmtUpdate_<%=cid %>.close();
-		}
-		if(pstmtInsert_<%=cid %> != null){
-			pstmtInsert_<%=cid %>.close();
-		}
-		if(pstmt_<%=cid %> != null) {
-			pstmt_<%=cid %>.close();
-		}
-		<%
-	} else if(("UPDATE_OR_INSERT").equals(dataAction)) {
-		%>
-		if(pstmtUpdate_<%=cid%> != null){
-			pstmtUpdate_<%=cid %>.close();
-		}
-		if(pstmtInsert_<%=cid %> != null){
-			pstmtInsert_<%=cid %>.close();
-		}
-		<%
-	} else {
-	//----------------------batch size
+    List<? extends IConnection> rejectConns = node.getOutgoingConnections("REJECT");
+    if(rejectConns != null && rejectConns.size() > 0) {
+        IConnection rejectConn = rejectConns.get(0);
+        rejectConnName = rejectConn.getName();
+    }
+
+    if(("INSERT_OR_UPDATE").equals(dataAction)) {
+        %>
+        if(pstmtUpdate_<%=cid%> != null){
+
+            pstmtUpdate_<%=cid %>.close();
+            
+        } 
+        if(pstmtInsert_<%=cid %> != null){
+
+            pstmtInsert_<%=cid %>.close();
+            
+        }
+        if(pstmt_<%=cid %> != null) {
+
+            pstmt_<%=cid %>.close();
+            
+        }        
+        <%
+    } else if(("UPDATE_OR_INSERT").equals(dataAction)) {
+        %>
+        if(pstmtUpdate_<%=cid%> != null){
+
+            pstmtUpdate_<%=cid %>.close();
+            
+        } 
+        if(pstmtInsert_<%=cid %> != null){
+
+            pstmtInsert_<%=cid %>.close();
+            
+        }        
+        <%
+    } else {
+    //----------------------batch size
 		if ((rejectConnName == null && ("true").equals(useBatchSize)&& ! useExistingConnection) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
-%>
+%>                
 			try {
 				// when PreparedStatement execute "executeBatch" if have no any data to update that will throw "java.sql.SQLException: Method can be called only once."
 				if (pstmt_<%=cid %> != null && batchSizeCounter_<%=cid%> > 0) {
-					<%
-				log4jCodeGenerateUtil.executeBatch(node,2);
-					if (("INSERT").equals(dataAction)) {
-					%>
-						insertedCount_<%=cid%> +=countSum_<%=cid%>;
-					<%
-					}else if (("UPDATE").equals(dataAction)) {
-					%>
-						updatedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
-					}else if (("DELETE").equals(dataAction)) {
-					%>
-						deletedCount_<%=cid%> += countSum_<%=cid%>;
-					<%
+					int countSum_<%=cid%> = 0;
+					for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
+						countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
 					}
-					%>
-				}
-			}catch (java.sql.BatchUpdateException e_<%=cid%>){
-				<%if(("true").equals(dieOnError)) {
-					log4jCodeGenerateUtil.logError(node,"fatal","e_"+cid);
-					%>
-					throw(e_<%=cid%>);
-				<%
-				}else {
-					log4jCodeGenerateUtil.logError(node,"error","e_"+cid);
-					%>
-					System.out.println(e_<%=cid%>.getMessage());
-				<%
-				}
-				%>
-			}
+	    	    	<%
+	    	    	if (("INSERT").equals(dataAction)) {
+	    	    	%>
+	    	    		insertedCount_<%=cid%> +=countSum_<%=cid%>; 
+	    	    	<%
+	    	    	}else if (("UPDATE").equals(dataAction)) {
+	    	    	%>
+	    	    		updatedCount_<%=cid%> += countSum_<%=cid%>;
+	    	    	<%
+	    	    	}else if (("DELETE").equals(dataAction)) {
+	    	    	%>
+	    	    	    deletedCount_<%=cid%> += countSum_<%=cid%>;
+	    	    	<%
+	    	    	}
+	    	    	%>
+    	    	}
+            }catch (java.sql.BatchUpdateException e){
+            	<%
+            	if(("true").equals(dieOnError)) {
+            	%>
+            		throw(e);
+            	<%
+            	}else {
+            	%>
+            	System.out.println(e.getMessage());
+            	<%
+            	}
+            	%>                	
+        	}                                  
 <%
 		}//--------end batch
-%>
-		if(pstmt_<%=cid %> != null) {
-			pstmt_<%=cid %>.close();
-		}
-	<%
-	}
+%> 
+        if(pstmt_<%=cid %> != null) {
+
+            pstmt_<%=cid %>.close();
+            
+        }
+ 
+    <%
+    }   
 if(useTransaction && !("").equals(commitEvery)&&!("0").equals(commitEvery)){
-	log4jCodeGenerateUtil.commit(node);
+    %>
+        conn_<%=cid%>.commit();
+    <%
 }
 if (!useExistingConnection) {
-	log4jCodeGenerateUtil.close(node);
 	%>
+	conn_<%=cid%> .close();
 	resourceMap.put("finish_<%=cid%>", true);
 	<%
 }
 %>
+
 <%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>

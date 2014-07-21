@@ -1,43 +1,232 @@
-<%@ jet
+<%@ jet 
 imports="
 		org.talend.designer.codegen.config.CodeGeneratorArgument
 		org.talend.core.model.process.INode
-		org.talend.core.model.process.ElementParameterParser
-		org.talend.core.model.metadata.IMetadataTable
-		org.talend.core.model.metadata.types.JavaTypesManager
+		org.talend.core.model.process.ElementParameterParser  
+		org.talend.core.model.metadata.IMetadataTable 
 		org.talend.core.model.metadata.MappingTypeRetriever
-		org.talend.core.model.metadata.MetadataTalendType
-		org.talend.core.model.process.IConnection
+        org.talend.core.model.metadata.MetadataTalendType		
 		java.util.List
 		java.util.ArrayList
 		java.util.Map
 		java.util.HashMap
-"
+" 
 skeleton="../templates/db_output_bulk.skeleton"
 %>
-<%@ include file="../templates/DB/Output/HelpClass.javajet"%>
+
 <%
-	class DBOutputBeginUtil extends DefaultDBOutputUtil{
-		public void beforeComponentProcess(INode node){
-			super.beforeComponentProcess(node);
-			cid = node.getUniqueName();
-			dbschema= ElementParameterParser.getValue(node, "__DB_SCHEMA__");
-		}
-		public String getDirverClassName(INode node){
-			return "com.exasol.jdbc.EXADriver";
-		}
-		public void setURL(INode node) {
-		%>
-			String dbProperties_<%=cid%> = <%=dbproperties%>;
-			String url_<%=cid%> = null;
-			if(dbProperties_<%=cid%> == null || dbProperties_<%=cid%>.trim().length() == 0) {
-				url_<%=cid %> = "jdbc:exa:" + <%=dbhost%> + ":" + <%=dbport%>+ ";schema=" + <%=dbschema%>;
-			} else {
-				url_<%=cid %> = "jdbc:exa:" + <%=dbhost%> + ":" + <%=dbport%> + ";schema=" + <%=dbschema%> + ";" + <%=dbproperties%>;
-			}
-		<%
-		}
-	}
-	dbOutputBeginUtil = new DBOutputBeginUtil();
+	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+	INode node = (INode)codeGenArgument.getArgument();
+	
+	String cid = node.getUniqueName();
+	
+    List<Map<String, String>> addCols =
+            (List<Map<String,String>>)ElementParameterParser.getObjectValue(
+                node,"__ADD_COLS__" );
+    
+    boolean useFieldOptions = ElementParameterParser.getValue(node, "__USE_FIELD_OPTIONS__").equals("true");
+    
+    List<Map<String, String>> fieldOptions = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__FIELD_OPTIONS__");
+    String dbschema= ElementParameterParser.getValue(node, "__DB_SCHEMA__");
+        
+    String dbhost = ElementParameterParser.getValue(node, "__HOST__");
+    
+    String dbproperties = ElementParameterParser.getValue(node, "__PROPERTIES__");
+    	String dbport= ElementParameterParser.getValue(node, "__PORT__");
+	String dbuser= ElementParameterParser.getValue(node, "__USER__");
+	
+	String dbpwd= ElementParameterParser.getValue(node, "__PASS__");
+	
+	String tableName = ElementParameterParser.getValue(node,"__TABLE__");
+	
+	String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");
+	
+	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
+	
+	String tableAction = ElementParameterParser.getValue(node,"__TABLE_ACTION__");
+	
+	String commitEvery = ElementParameterParser.getValue(node, "__COMMIT_EVERY__");
+
+	boolean isEnableDebug = ElementParameterParser.getValue(node,"__ENABLE_DEBUG_MODE__").equals("true");
+	boolean isParallelize ="true".equalsIgnoreCase(ElementParameterParser.getValue(node, "__PARALLELIZE__"));
 %>
-<%@ include file="../templates/DB/Output/AbstractDBOutputBegin.javajet"%>
+
+<%
+List<IMetadataColumn> columnList = getColumnList(node);
+List<Column> stmtStructure = null;
+if(columnList != null && columnList.size() > 0) {
+    stmtStructure = getManager(dbmsId, cid).createColumnList(columnList, useFieldOptions, fieldOptions, addCols);
+}
+%>
+
+<%
+if(dataAction.equals("UPDATE") || dataAction.equals("INSERT_OR_UPDATE") || dataAction.equals("UPDATE_OR_INSERT")) {
+    int updateKeyCount = 0;
+    if(stmtStructure != null) {
+        for(Column column : stmtStructure) {
+            if(column.isUpdateKey()) {
+                updateKeyCount++;
+            }
+        }
+        %>
+        int updateKeyCount_<%=cid%> = <%=updateKeyCount%>;
+        if(updateKeyCount_<%=cid%> < 1) {
+            throw new RuntimeException("For update, Schema must have a key");
+        }
+        <%
+    }
+} else if(dataAction.equals("DELETE")) {
+    int deleteKeyCount = 0;
+    if(stmtStructure != null) {
+        for(Column column : stmtStructure) {
+            if(column.isDeleteKey()) {
+                deleteKeyCount++;
+            }
+        }
+        %>
+        int deleteKeyCount_<%=cid%> = <%=deleteKeyCount%>;
+        if(deleteKeyCount_<%=cid%> < 1) {
+            throw new RuntimeException("For delete, Schema must have a key");
+        }
+        <%
+    }
+}
+%>
+
+int nb_line_<%=cid%> = 0;
+int nb_line_update_<%=cid%> = 0;
+int nb_line_inserted_<%=cid%> = 0;
+int nb_line_deleted_<%=cid%> = 0;
+int nb_line_rejected_<%=cid%> = 0;
+
+int deletedCount_<%=cid%>=0;
+int updatedCount_<%=cid%>=0;
+int insertedCount_<%=cid%>=0;
+
+String tableName_<%=cid%> = <%=tableName%>;
+boolean whetherReject_<%=cid%> = false;
+
+
+    String dbProperties_<%=cid%> = <%=dbproperties%>;
+    String url_<%=cid%> = null;
+    if(dbProperties_<%=cid%> == null || dbProperties_<%=cid%>.trim().length() == 0) {
+        url_<%=cid %> = "jdbc:exa:" + <%=dbhost%> + ":" + <%=dbport%>+ ";schema=" + <%=dbschema%>; 
+    } else {
+       url_<%=cid %> = "jdbc:exa:" + <%=dbhost%> + ":" + <%=dbport%> + ";schema=" + <%=dbschema%> + ";" + <%=dbproperties%>;
+    }
+    String dbUser_<%=cid %> = <%=dbuser%>;
+    String dbPwd_<%=cid %> = <%=dbpwd%>;    
+     java.lang.Class.forName("com.exasol.jdbc.EXADriver");
+    java.sql.Connection conn_<%=cid%> = java.sql.DriverManager.getConnection(url_<%=cid %>,dbUser_<%=cid%>,dbPwd_<%=cid%>);
+    resourceMap.put("conn_<%=cid%>", conn_<%=cid%>);
+    <%
+String useCommitControl = ElementParameterParser.getValue(node,"__USE_COMMIT_CONTROL__");
+    if(useCommitControl.equals("true")) {// if use commit control
+        if(!commitEvery.equals("") && !commitEvery.equals("0")) {
+            %>
+            conn_<%=cid%>.setAutoCommit(false);
+            int commitEvery_<%=cid%> = <%=commitEvery%>;                
+            int commitCounter_<%=cid%> = 0;                
+            <%
+        }
+    }
+if(columnList != null && columnList.size() > 0) {    
+    if(!isParallelize && !tableAction.equals("NONE")) {
+        Manager manager = getManager(dbmsId, cid);
+        if(tableAction.equals("DROP_CREATE")) {
+            %>
+            java.sql.Statement stmtDrop_<%=cid%> = conn_<%=cid%>.createStatement();
+            stmtDrop_<%=cid%>.execute("<%=manager.getDropTableSQL()%>");
+            java.sql.Statement stmtCreate_<%=cid%> = conn_<%=cid%>.createStatement();
+            stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");
+            <%
+        } else if(tableAction.equals("CREATE")) {
+            %>
+            java.sql.Statement stmtCreate_<%=cid%> = conn_<%=cid%>.createStatement();
+            stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");
+            <%
+        } else if(tableAction.equals("CREATE_IF_NOT_EXISTS") || tableAction.equals("DROP_IF_EXISTS_AND_CREATE")) {
+            %>
+            java.sql.DatabaseMetaData dbMetaData_<%=cid%> = conn_<%=cid%>.getMetaData();
+            java.sql.ResultSet rsTable_<%=cid%> = dbMetaData_<%=cid%>.getTables(null, null, null, new String[]{"TABLE"});
+            boolean whetherExist_<%=cid%> = false;
+            while(rsTable_<%=cid%>.next()) {
+                String table_<%=cid%> = rsTable_<%=cid%>.getString("TABLE_NAME");
+                if(table_<%=cid%>.equalsIgnoreCase(<%=tableName%>)) {
+                    whetherExist_<%=cid%> = true;
+                    break;
+                }
+            }
+            <%
+            if(tableAction.equals("CREATE_IF_NOT_EXISTS")) {
+                %>
+                if(!whetherExist_<%=cid%>) {
+                    java.sql.Statement stmtCreate_<%=cid%> = conn_<%=cid%>.createStatement();
+                    stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");            
+                }                
+                <%
+            } else {
+                %>
+                if(whetherExist_<%=cid%>) {
+                    java.sql.Statement stmtDrop_<%=cid%> = conn_<%=cid%>.createStatement();
+                    stmtDrop_<%=cid%>.execute("<%=manager.getDropTableSQL()%>");
+                }
+                java.sql.Statement stmtCreate_<%=cid%> = conn_<%=cid%>.createStatement();
+                stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");                
+            <%
+            }
+        } else if(tableAction.equals("CLEAR")) {
+            %>
+            java.sql.Statement stmtClear_<%=cid%> = conn_<%=cid%>.createStatement();
+            deletedCount_<%=cid%> = deletedCount_<%=cid%> + stmtClear_<%=cid%>.executeUpdate("<%=manager.getDeleteTableSQL()%>");
+            <%
+        }
+    }    
+    Map<String, StringBuilder> actionSQLMap = getManager(dbmsId, cid).createProcessSQL(stmtStructure);
+    StringBuilder insertColName = actionSQLMap.get(INSERT_COLUMN_NAME);   
+    StringBuilder insertValueStmt = actionSQLMap.get(INSERT_VALUE_STMT);    
+    StringBuilder updateSetStmt = actionSQLMap.get(UPDATE_SET_STMT);    
+    StringBuilder updateWhereStmt = actionSQLMap.get(UPDATE_WHERE_STMT);
+    StringBuilder deleteWhereStmt = actionSQLMap.get(DELETE_WHERE_STMT);
+
+	if(dataAction.equals("INSERT")) {
+	    %>
+	    String insert_<%=cid%> = "INSERT INTO " + <%=tableName%> + " (<%=insertColName.toString()%>) VALUES (<%=insertValueStmt.toString()%>)";
+	    java.sql.PreparedStatement pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
+	    <%
+	} else if (dataAction.equals("UPDATE")) {
+	    %>
+	    String update_<%=cid%> = "UPDATE " + <%=tableName%> + " SET <%=updateSetStmt.toString()%> WHERE <%=updateWhereStmt.toString()%>";
+	    java.sql.PreparedStatement pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(update_<%=cid%>);
+	    <%		
+	} else if (dataAction.equals("INSERT_OR_UPDATE")) {
+	    %>
+	    java.sql.PreparedStatement pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement("SELECT COUNT(1) FROM " + <%=tableName%> + " WHERE <%=updateWhereStmt.toString()%>");
+	    String insert_<%=cid%> = "INSERT INTO " + <%=tableName%> + " (<%=insertColName.toString()%>) VALUES (<%=insertValueStmt.toString()%>)";
+	    java.sql.PreparedStatement pstmtInsert_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
+	    String update_<%=cid%> = "UPDATE " + <%=tableName%> + " SET <%=updateSetStmt.toString()%> WHERE <%=updateWhereStmt.toString()%>";
+	    java.sql.PreparedStatement pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement(update_<%=cid%>);
+	    <%
+	} else if (dataAction.equals("UPDATE_OR_INSERT")) {
+	    %>
+	    String update_<%=cid%> = "UPDATE " + <%=tableName%> + " SET <%=updateSetStmt.toString()%> WHERE <%=updateWhereStmt.toString()%>";
+	    java.sql.PreparedStatement pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement(update_<%=cid%>);
+	    String insert_<%=cid%> = "INSERT INTO " + <%=tableName%> + " (<%=insertColName.toString()%>) VALUES (<%=insertValueStmt.toString()%>)";
+	    java.sql.PreparedStatement pstmtInsert_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);		
+	    <%			
+	} else if (dataAction.equals("DELETE")) {
+	    %>
+	    String delete_<%=cid%> = "DELETE FROM " + <%=tableName%> + " WHERE <%=deleteWhereStmt.toString()%>";
+	    java.sql.PreparedStatement pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(delete_<%=cid%>);
+	    <%		
+	}
+    if(isEnableDebug) {
+        %>
+        String query_<%=cid%> = null;
+        <%
+    }    
+}
+%>
+
+
+
