@@ -35,6 +35,7 @@ import org.talend.commons.ui.utils.PathUtils;
 import org.talend.commons.utils.PasswordEncryptUtil;
 import org.talend.core.model.metadata.builder.connection.FTPConnection;
 import org.talend.core.model.properties.ConnectionItem;
+import org.talend.cwm.helper.ConnectionHelper;
 import org.talend.repository.ftp.i18n.Messages;
 import org.talend.repository.ftp.ui.wizards.pags.FTPPage;
 import org.talend.repository.ui.swt.utils.AbstractForm;
@@ -111,7 +112,7 @@ public class FTPForm extends AbstractForm {
     private GridData proxyChildComGridData;
 
     /**
-     * DOC Administrator FTPFrom constructor comment.
+     * DOC Administrator FTPForm constructor comment.
      * 
      * @param parent
      * @param style
@@ -160,14 +161,14 @@ public class FTPForm extends AbstractForm {
         GridData gridData = new GridData(GridData.FILL_HORIZONTAL);
         ftpParameterGroup.setLayoutData(gridData);
 
-        ftpUsernameText = new LabelledText(ftpParameterGroup, Messages.getString("FTPFrom_ftpUsernameText"), true); //$NON-NLS-1$
+        ftpUsernameText = new LabelledText(ftpParameterGroup, Messages.getString("FTPForm_ftpUsernameText"), true); //$NON-NLS-1$
 
         ftpPasswordText = new LabelledText(ftpParameterGroup,
-                Messages.getString("FTPFrom_ftpPasswordText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
+                Messages.getString("FTPForm_ftpPasswordText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
 
-        ftpHostText = new LabelledText(ftpParameterGroup, Messages.getString("FTPFrom_ftpHostText"), true); //$NON-NLS-1$
+        ftpHostText = new LabelledText(ftpParameterGroup, Messages.getString("FTPForm_ftpHostText"), true); //$NON-NLS-1$
 
-        ftpPortText = new LabelledText(ftpParameterGroup, Messages.getString("FTPFrom_ftpPortText"), true); //$NON-NLS-1$
+        ftpPortText = new LabelledText(ftpParameterGroup, Messages.getString("FTPForm_ftpPortText"), true); //$NON-NLS-1$
 
         Composite com = new Composite(ftpParameterGroup, SWT.NONE);
         layoutGroup = new GridLayout(2, false);
@@ -190,9 +191,9 @@ public class FTPForm extends AbstractForm {
         List<String> connList = new ArrayList<String>();
         connList.add("Passive"); //$NON-NLS-1$
         connList.add("Active"); //$NON-NLS-1$
-        connModelCombo = new LabelledCombo(ftpParameterGroup, Messages.getString("FTPFrom_conn_model"), "", connList); //$NON-NLS-1$ //$NON-NLS-2$
+        connModelCombo = new LabelledCombo(ftpParameterGroup, Messages.getString("FTPForm_conn_model"), "", connList); //$NON-NLS-1$ //$NON-NLS-2$
         if (getConnection().getMode() == null || "".equals(getConnection().getMode())) { //$NON-NLS-1$
-            connModelCombo.setText(Messages.getString("FTPFrom_passive")); //$NON-NLS-1$
+            connModelCombo.setText(Messages.getString("FTPForm_passive")); //$NON-NLS-1$
             getConnection().setMode(connModelCombo.getText());
         }
 
@@ -210,9 +211,9 @@ public class FTPForm extends AbstractForm {
         checkButtonCom.setLayoutData(gridData);
 
         sftpSuppBut = new Button(checkButtonCom, SWT.CHECK);
-        sftpSuppBut.setText(Messages.getString("FTPFrom_sftp_suport")); //$NON-NLS-1$
+        sftpSuppBut.setText(Messages.getString("FTPForm_sftp_suport")); //$NON-NLS-1$
         ftpsSuppBut = new Button(checkButtonCom, SWT.CHECK);
-        ftpsSuppBut.setText(Messages.getString("FTPFrom_ftps_support")); //$NON-NLS-1$
+        ftpsSuppBut.setText(Messages.getString("FTPForm_ftps_support")); //$NON-NLS-1$
         String[] methodComboStr = { PUBLIC_KEY, PASSWORD };
 
         tetsCom = new Composite(buildGroup, SWT.NONE);
@@ -232,13 +233,13 @@ public class FTPForm extends AbstractForm {
         sftpChildCom.setLayoutData(sftpChildComGridData);
 
         methodCombo = new LabelledCombo(sftpChildCom,
-                Messages.getString("FTPFrom_authen_method"), "", methodComboStr, 2, false, SWT.NONE); //$NON-NLS-1$ //$NON-NLS-2$
+                Messages.getString("FTPForm_authen_method"), "", methodComboStr, 2, false, SWT.NONE); //$NON-NLS-1$ //$NON-NLS-2$
 
         // file Field
         String[] extensions = { "*.*" }; //$NON-NLS-1$
-        privatekeyText = new LabelledFileField(sftpChildCom, Messages.getString("FTPFrom_privatekeyText"), extensions); //$NON-NLS-1$
+        privatekeyText = new LabelledFileField(sftpChildCom, Messages.getString("FTPForm_privatekeyText"), extensions); //$NON-NLS-1$
         passphraseText = new LabelledText(sftpChildCom,
-                Messages.getString("FTPFrom_passphraseText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
+                Messages.getString("FTPForm_passphraseText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
 
         ftpsChildCom = new Composite(tetsCom, SWT.NONE);
         layoutGroup = new GridLayout(3, false);
@@ -249,9 +250,9 @@ public class FTPForm extends AbstractForm {
         gridData.widthHint = 300;
         gridData.heightHint = 90;
         ftpsChildCom.setLayoutData(ftpsChildComGridData);
-        keyFileText = new LabelledFileField(ftpsChildCom, Messages.getString("FTPFrom_keyFileText"), extensions); //$NON-NLS-1$
+        keyFileText = new LabelledFileField(ftpsChildCom, Messages.getString("FTPForm_keyFileText"), extensions); //$NON-NLS-1$
         keyPasswordText = new LabelledText(ftpsChildCom,
-                Messages.getString("FTPFrom_keyPasswordText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
+                Messages.getString("FTPForm_keyPasswordText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
 
         proxyCom = new Composite(buildGroup, SWT.NONE);
         layoutGroup = new GridLayout(1, false);
@@ -260,18 +261,18 @@ public class FTPForm extends AbstractForm {
         proxyCom.setLayoutData(gridData);
 
         useSocksBut = new Button(proxyCom, SWT.CHECK);
-        useSocksBut.setText(Messages.getString("FTPFrom_sccks_proxy")); //$NON-NLS-1$
+        useSocksBut.setText(Messages.getString("FTPForm_sccks_proxy")); //$NON-NLS-1$
 
         proxyChildCom = new Composite(proxyCom, SWT.NONE);
         layoutGroup = new GridLayout(2, false);
         proxyChildCom.setLayout(layoutGroup);
         proxyChildComGridData = new GridData(GridData.FILL_HORIZONTAL);
         proxyChildCom.setLayoutData(proxyChildComGridData);
-        proxyHostText = new LabelledText(proxyChildCom, Messages.getString("FTPFrom_proxyHostText"), true); //$NON-NLS-1$
-        proxyPortText = new LabelledText(proxyChildCom, Messages.getString("FTPFrom_proxyPortText"), true); //$NON-NLS-1$
-        proxyUsernameText = new LabelledText(proxyChildCom, Messages.getString("FTPFrom_proxyUsernameText"), true); //$NON-NLS-1$
+        proxyHostText = new LabelledText(proxyChildCom, Messages.getString("FTPForm_proxyHostText"), true); //$NON-NLS-1$
+        proxyPortText = new LabelledText(proxyChildCom, Messages.getString("FTPForm_proxyPortText"), true); //$NON-NLS-1$
+        proxyUsernameText = new LabelledText(proxyChildCom, Messages.getString("FTPForm_proxyUsernameText"), true); //$NON-NLS-1$
         proxyPasswordText = new LabelledText(proxyChildCom,
-                Messages.getString("FTPFrom_proxyPasswordText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
+                Messages.getString("FTPForm_proxyPasswordText"), 1, SWT.BORDER | SWT.PASSWORD); //$NON-NLS-1$
 
         checkFieldsValue();
     }
@@ -421,12 +422,14 @@ public class FTPForm extends AbstractForm {
                     privatekeyText.setVisible(true);
                     passphraseText.setVisible(true);
                     privatekeyText.setText(getConnection().getPrivatekey() != null ? getConnection().getPrivatekey() : ""); //$NON-NLS-1$
-                    passphraseText.setText(getConnection().getPassphrase() != null ? getConnection().getPassphrase() : ""); //$NON-NLS-1$
-                    getConnection().setPrivatekey(privatekeyText.getText());
-                    getConnection().setPassphrase(passphraseText.getText());
+                    // decrypt password
+                    try {
+                        passphraseText.setText(PasswordEncryptUtil.decryptPassword(getConnection().getPassphrase()));
+                    } catch (Exception ex) {
+                        String pwd = ConnectionHelper.getDecryptPassword(getConnection().getPassphrase());
+                        passphraseText.setText(pwd != null ? pwd : getConnection().getPassphrase());
+                    }
                 } else {
-                    getConnection().setPrivatekey(getConnection().getPrivatekey());
-                    getConnection().setPassphrase(getConnection().getPassphrase());
                     privatekeyText.setVisible(false);
                     passphraseText.setVisible(false);
                 }
@@ -499,7 +502,7 @@ public class FTPForm extends AbstractForm {
                 getConnection().setSFTP(show);
                 checkFieldsValue();
                 sftpChildCom.setVisible(show);
-                ftpsChildCom.setVisible(!show);
+                ftpsChildCom.setVisible(!show && ftpsSuppBut.getSelection());
                 sftpChildCom.layout();
                 ftpsChildCom.layout();
                 tetsCom.layout();
@@ -532,7 +535,7 @@ public class FTPForm extends AbstractForm {
                 connModelCombo.setEnabled(!show);
                 getConnection().setFTPS(show);
                 checkFieldsValue();
-                sftpChildCom.setVisible(!show);
+                sftpChildCom.setVisible(!show && sftpSuppBut.getSelection());
                 ftpsChildCom.setVisible(show);
                 sftpChildCom.layout();
                 ftpsChildCom.layout();
@@ -578,35 +581,36 @@ public class FTPForm extends AbstractForm {
     @Override
     public boolean checkFieldsValue() {
         if (ftpHostText.getCharCount() == 0) {
-            updateStatus(IStatus.ERROR, Messages.getString("FTPFrom_ftpHostText_check")); //$NON-NLS-1$
+            updateStatus(IStatus.ERROR, Messages.getString("FTPForm_ftpHostText_check")); //$NON-NLS-1$
             return false;
         }
 
         if (ftpPortText.getCharCount() == 0) {
-            updateStatus(IStatus.ERROR, Messages.getString("FTPFrom_ftpPortText_check")); //$NON-NLS-1$
+            updateStatus(IStatus.ERROR, Messages.getString("FTPForm_ftpPortText_check")); //$NON-NLS-1$
             return false;
         }
 
         if (ftpUsernameText.getCharCount() == 0) {
-            updateStatus(IStatus.ERROR, Messages.getString("FTPFrom_ftpUsernameText_check")); //$NON-NLS-1$
+            updateStatus(IStatus.ERROR, Messages.getString("FTPForm_ftpUsernameText_check")); //$NON-NLS-1$
             return false;
         }
 
         // only check the Password model
         if (sftpSuppBut.getSelection() && methodCombo != null && PASSWORD.equals(methodCombo.getText())) {
             if (ftpPasswordText.getCharCount() == 0) {
-                updateStatus(IStatus.ERROR, Messages.getString("FTPFrom_ftpPasswordText_check")); //$NON-NLS-1$
+                updateStatus(IStatus.ERROR, Messages.getString("FTPForm_ftpPasswordText_check")); //$NON-NLS-1$
                 return false;
             }
         }
 
-        if (sftpSuppBut.getSelection() && privatekeyText.getText() == "") { //$NON-NLS-1$
-            updateStatus(IStatus.ERROR, Messages.getString("FTPFrom_filepathAlert")); //$NON-NLS-1$
+        if (sftpSuppBut.getSelection() && methodCombo != null && PUBLIC_KEY.equals(methodCombo.getText())
+                && privatekeyText.getText() == "") { //$NON-NLS-1$
+            updateStatus(IStatus.ERROR, Messages.getString("FTPForm_filepathAlert")); //$NON-NLS-1$
             return false;
         }
 
         if (ftpsSuppBut.getSelection() && keyFileText.getText() == "") { //$NON-NLS-1$
-            updateStatus(IStatus.ERROR, Messages.getString("FTPFrom_filepathAlert")); //$NON-NLS-1$
+            updateStatus(IStatus.ERROR, Messages.getString("FTPForm_filepathAlert")); //$NON-NLS-1$
             return false;
         }
 
@@ -623,7 +627,13 @@ public class FTPForm extends AbstractForm {
     @Override
     protected void initialize() {
         ftpUsernameText.setText(getConnection().getUsername());
-        ftpPasswordText.setText(getConnection().getPassword());
+        // decrypt password
+        try {
+            ftpPasswordText.setText(PasswordEncryptUtil.decryptPassword(getConnection().getPassword()));
+        } catch (Exception e) {
+            String pwd = ConnectionHelper.getDecryptPassword(getConnection().getPassword());
+            ftpPasswordText.setText(pwd != null ? pwd : getConnection().getPassword());
+        }
         ftpPortText.setText(getConnection().getPort());
         ftpHostText.setText(getConnection().getHost());
         encodeCombo.setText(getConnection().getEcoding());
@@ -654,7 +664,13 @@ public class FTPForm extends AbstractForm {
                 privatekeyText.setVisible(true);
                 passphraseText.setVisible(true);
                 privatekeyText.setText(getConnection().getPrivatekey() != null ? getConnection().getPrivatekey() : "");//$NON-NLS-1$
-                passphraseText.setText(getConnection().getPassphrase() != null ? getConnection().getPassphrase() : ""); //$NON-NLS-1$
+                // decrypt password
+                try {
+                    passphraseText.setText(PasswordEncryptUtil.decryptPassword(getConnection().getPassphrase()));
+                } catch (Exception e) {
+                    String pwd = ConnectionHelper.getDecryptPassword(getConnection().getPassphrase());
+                    passphraseText.setText(pwd != null ? pwd : getConnection().getPassphrase());
+                }
             } else {
                 privatekeyText.setVisible(false);
                 passphraseText.setVisible(false);
@@ -678,7 +694,13 @@ public class FTPForm extends AbstractForm {
             connModelCombo.setEnabled(false);
             ftpsSuppBut.setSelection(getConnection().isFTPS());
             keyFileText.setText(getConnection().getKeystoreFile());
-            keyPasswordText.setText(getConnection().getKeystorePassword());
+            // decrypt password
+            try {
+                keyPasswordText.setText(PasswordEncryptUtil.decryptPassword(getConnection().getKeystorePassword()));
+            } catch (Exception e) {
+                String pwd = ConnectionHelper.getDecryptPassword(getConnection().getKeystorePassword());
+                keyPasswordText.setText(pwd != null ? pwd : getConnection().getKeystorePassword());
+            }
         } else {
             ftpsChildComGridData.exclude = true;
             ftpsChildCom.setVisible(false);
@@ -697,7 +719,13 @@ public class FTPForm extends AbstractForm {
             proxyHostText.setText(getConnection().getProxyhost());
             proxyPortText.setText(getConnection().getProxyport());
             proxyUsernameText.setText(getConnection().getProxyuser());
-            proxyPasswordText.setText(getConnection().getProxypassword());
+            // decrypt password
+            try {
+                proxyPasswordText.setText(PasswordEncryptUtil.decryptPassword(getConnection().getProxypassword()));
+            } catch (Exception e) {
+                String pwd = ConnectionHelper.getDecryptPassword(getConnection().getProxypassword());
+                proxyPasswordText.setText(pwd != null ? pwd : getConnection().getProxypassword());
+            }
         } else {
             proxyChildComGridData.exclude = true;
             proxyChildCom.setVisible(false);
