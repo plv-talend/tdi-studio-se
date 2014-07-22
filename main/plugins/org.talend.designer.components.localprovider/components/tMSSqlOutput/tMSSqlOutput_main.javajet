@@ -1176,6 +1176,36 @@ if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("t
 %>   
                 updateFlag_<%=cid%>=pstmtUpdate_<%=cid %>.executeUpdate();
                 updatedCount_<%=cid%> = updatedCount_<%=cid%>+updateFlag_<%=cid%>;
+            } catch(java.lang.Exception e) {
+                whetherReject_<%=cid%> = true;
+                <%
+                if (("true").equals(dieOnError)) {
+                    %>
+                    throw(e);
+                    <%
+                } else {
+                    if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
+                        %>
+                        <%=rejectConnName %> = new <%=rejectConnName %>Struct();
+                        <%
+                        for(IMetadataColumn column : columnList) {
+                            %>
+                            <%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
+                            <%
+                        }
+                        %>
+                        rejectedCount_<%=cid%> = rejectedCount_<%=cid%> + 1;
+                        <%=rejectConnName%>.errorCode = ((java.sql.SQLException)e).getSQLState();
+                        <%=rejectConnName%>.errorMessage = e.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
+                        <%
+                    } else {
+                        %>
+                        System.err.println(e.getMessage());
+                        <%
+                    }
+                } 
+                %>
+            }
             if(updateFlag_<%=cid%> == 0) {
             	<%
             	if(isEnableDebug) {
@@ -1184,6 +1214,14 @@ if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("t
         		<%
         		}
                 int counter = 1;
+                
+			//start issue0010403 date type     
+			if (rejectConnName != null) {
+%>
+            try {
+<%
+			}//end issue0010403 date type
+			                
                 for(Column column : colStruct) {
                     if(column.isInsertable()) {
                         String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());
@@ -1218,8 +1256,15 @@ if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("t
                     <%
                 }                
                 %>
+<%				
+				//start issue0010403 date type
+				if (rejectConnName == null) {
+%>
+            try {
+<%
+				}//end issue0010403 date type
+%>   
                     insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmtInsert_<%=cid %>.executeUpdate(); 
-			}
                 } catch(java.lang.Exception e) {
                     whetherReject_<%=cid%> = true;
                     <%
@@ -1250,6 +1295,8 @@ if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("t
                     } 
                     %>
                 }
+            }
+           
             nb_line_<%=cid%>++;
             <%
         
