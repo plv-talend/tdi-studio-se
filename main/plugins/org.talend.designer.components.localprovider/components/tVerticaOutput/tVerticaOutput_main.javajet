@@ -908,22 +908,47 @@ skeleton="../templates/db_output_bulk.skeleton"
 				<%if ((rejectConnName==null && !useExistingConnection) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction)) ||("COPY".equals(dataAction)) ) {
 				%>
 				try {
-						<%
-						if (!"COPY".equals(dataAction)) {
-							if (batchMode) {//manual commit and batch mode
-						%>
-								if(batchSizeCounter_<%=cid%> > 0){
-									pstmt_<%=cid %>.executeBatch();
-									batchSizeCounter_<%=cid%> = 0;
-								}
-						<%
-							}else{//manual commit
-						%>
-								pstmt_<%=cid %>.executeBatch(); 
-						<%
+					<%
+					if (!"COPY".equals(dataAction)) {
+						if (batchMode) {//manual commit and batch mode
+					%>
+							boolean isCountResult_<%=cid%> = false;
+							if(batchSizeCounter_<%=cid%> > 0){
+								pstmt_<%=cid %>.executeBatch();
+								isCountResult_<%=cid%> = true;
+								batchSizeCounter_<%=cid%> = 0;
 							}
-						} else {
-						%>
+					<%
+						}else{//manual commit
+					%>
+							pstmt_<%=cid %>.executeBatch(); 
+					<%
+						}
+						if (batchMode){
+					%>
+						if(isCountResult_<%=cid%>){
+					<%
+						}
+						if (("INSERT").equals(dataAction)) {
+					%>
+						insertedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+					<%
+						}else if (("UPDATE").equals(dataAction)) {
+					%>
+						updatedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+					<%
+						}else if (("DELETE").equals(dataAction)) {
+					%>
+						deletedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
+					<%
+						}
+						if (batchMode){
+					%>
+						}
+					<%
+						}
+					} else {
+					%>
 						if (stmtBuilder_<%=cid%> != null && stmtBuilder_<%=cid%>.length() != 0 ) { // stmtBuilder_<%=cid%> start
 							java.io.ByteArrayInputStream bais_<%=cid%> = new ByteArrayInputStream(stmtBuilder_<%=cid%>.toString().getBytes());
 							((com.vertica.PGStatement)stmt_<%=cid%>).executeCopyIn(template_<%=cid%>, bais_<%=cid%>);
@@ -933,28 +958,11 @@ skeleton="../templates/db_output_bulk.skeleton"
 								bais_<%=cid%> = null;
 							}
 							stmtBuilder_<%=cid%> = new StringBuilder();
-						<%
-						}
-						%>
-
-						<%if (("INSERT").equals(dataAction)) {
-						%>
-							insertedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
-						<%
-						}else if (("UPDATE").equals(dataAction)) {
-						%>
-							updatedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
-						<%
-						}else if (("DELETE").equals(dataAction)) {
-						%>
-							deletedCount_<%=cid%> += pstmt_<%=cid %>.getUpdateCount();
-						<%
-						}else if (("COPY").equals(dataAction)) {
-						%>
-								copiedCount_<%=cid%> += stmt_<%=cid %>.getUpdateCount();
+							copiedCount_<%=cid%> += stmt_<%=cid %>.getUpdateCount();
 						} // stmtBuilder_<%=cid %> end
-						<%
-						}%>  
+					<%
+					}
+					%>
 				}catch (java.sql.SQLException e){
 					<%if(("true").equals(dieOnError)) {
 					%>
