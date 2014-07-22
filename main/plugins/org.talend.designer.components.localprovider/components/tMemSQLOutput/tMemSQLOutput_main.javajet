@@ -37,9 +37,8 @@ skeleton="../templates/db_output_bulk.skeleton"
     boolean isEnableDebug = ("true").equals(ElementParameterParser.getValue(node,"__ENABLE_DEBUG_MODE__"));
 	
 	//feature:2880
-    getManager(dbmsId, cid, node);
-    boolean whereSupportNull = ElementParameterParser.getValue(node, "__SUPPORT_NULL_WHERE__").equals("true");
-	
+    getManager(dbmsId, cid, node);    
+	boolean whereSupportNull = "true".equals(ElementParameterParser.getValue(node, "__SUPPORT_NULL_WHERE__"));
 	
 	String incomingConnName = null;
 	List<IMetadataColumn> columnList = getColumnList(node);
