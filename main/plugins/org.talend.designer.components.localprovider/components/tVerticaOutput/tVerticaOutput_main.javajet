@@ -836,7 +836,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 						} else {
 						%>
 						java.io.ByteArrayInputStream bais_<%=cid%> = new ByteArrayInputStream(stmtBuilder_<%=cid%>.toString().getBytes());
-						<%if("VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)){%>
+						<%if("VERTICA_7_0_X".equals(db_version) || "VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)){%>
 						com.vertica.jdbc.VerticaCopyStream vcs_<%=cid%> = new com.vertica.jdbc.VerticaCopyStream((com.vertica.jdbc.VerticaConnection)conn_<%=cid%>,template_<%=cid%>);
 						vcs_<%=cid%>.start();
 						vcs_<%=cid%>.addStream(bais_<%=cid%>);
@@ -868,7 +868,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 							deletedCount_<%=cid%> += pstmt_<%=cid %>. getUpdateCount();
 						<%
 						}else if (("COPY").equals(dataAction)) {
-							if("VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)){
+							if("VERTICA_7_0_X".equals(db_version) || "VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)){
 						%>
 								copiedCount_<%=cid%> += vcs_<%=cid%>.getRowCount();
 						<%
@@ -899,7 +899,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 			}
 		}
 		////////////commit every////////////
-		if(!useExistingConnection && (!("VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)) || !"COPY".equals(dataAction))) {
+		if(!useExistingConnection && (!("VERTICA_7_0_X".equals(db_version) || "VERTICA_6_1_X".equals(db_version) || "VERTICA_6_0".equals(db_version) || "VERTICA_5_1".equals(db_version)) || !"COPY".equals(dataAction))) {
 			if(manualCommit) {
 				%>
 				commitCounter_<%=cid%>++;
