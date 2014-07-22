@@ -890,39 +890,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 				<%if(showSavePoint){%>
 	                conn_<%=cid%>.releaseSavepoint(sp_<%=cid %>);
 	            <%}%>
-            } catch(java.lang.Exception e) {
-				<%if(showSavePoint){%>
-	                conn_<%=cid%>.rollback(sp_<%=cid %>);
-	            <%}%> 
-                whetherReject_<%=cid%> = true;
-                <%
-                if (("true").equals(dieOnError)) {
-                    %>
-                    throw(e);
-                    <%
-                } else {
-                    if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
-                        %>
-                        <%=rejectConnName %> = new <%=rejectConnName %>Struct();
-                        <%
-                        for(IMetadataColumn column : columnList) {
-                            %>
-                            <%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
-                            <%
-                        }
-                        %>
-                        rejectedCount_<%=cid%> = rejectedCount_<%=cid%> + 1;
-                        <%=rejectConnName%>.errorCode = ((java.sql.SQLException)e).getSQLState();
-                        <%=rejectConnName%>.errorMessage = e.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
-                        <%
-                    } else {
-                        %>
-                        System.err.print(e.getMessage());
-                        <%
-                    }
-                } 
-                %>
-            }
             if(updateFlag_<%=cid%> == 0) {
             	<%
             	if(isEnableDebug) {
@@ -962,7 +929,6 @@ skeleton="../templates/db_output_bulk.skeleton"
                     <%
                 }                
                 %>
-                try {
 					<%if(showSavePoint){%>
 	                    sp_<%=cid %> = conn_<%=cid%>.setSavepoint();
 	                <%}%>
@@ -970,6 +936,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 					<%if(showSavePoint){%>
     	                conn_<%=cid%>.releaseSavepoint(sp_<%=cid %>);
     	            <%}%>
+    	            }
                 } catch(java.lang.Exception e) {
 					<%if(showSavePoint){%>
     	                conn_<%=cid%>.rollback(sp_<%=cid %>);
@@ -1003,7 +970,6 @@ skeleton="../templates/db_output_bulk.skeleton"
                     } 
                     %>
                 }
-            }
             nb_line_<%=cid%>++;
             <%
         
