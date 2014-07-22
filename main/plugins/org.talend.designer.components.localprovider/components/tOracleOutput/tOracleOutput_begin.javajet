@@ -29,7 +29,6 @@ String localServiceName = ElementParameterParser.getValue(node, "__LOCAL_SERVICE
 String dbhost = ElementParameterParser.getValue(node, "__HOST__");    
 String dbport = ElementParameterParser.getValue(node, "__PORT__");	
 String dbuser= ElementParameterParser.getValue(node, "__USER__");	
-String dbpwd= ElementParameterParser.getValue(node, "__PASS__");	
 String table = ElementParameterParser.getValue(node,"__TABLE__");	
 String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");	
 String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");	
@@ -257,7 +256,13 @@ if(useExistingConnection) {
 		}
 %>
 		String dbUser_<%=cid%> = <%=dbuser%>;
-		String dbPwd_<%=cid%> = <%=dbpwd%>;
+		<%
+		String passwordFieldName = "__PASS__";
+		%>
+
+		<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>
+
+		String dbPwd_<%=cid %> = decryptedPassword_<%=cid%>;
 		dbschema_<%=cid%> = <%=tableSchema%>;	
 		<%
 		log4jCodeGenerateUtil.debugConnectionParams(node);	

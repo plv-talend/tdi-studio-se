@@ -27,7 +27,6 @@ String driverJar = ElementParameterParser.getValue(node, "__DRIVER_JAR__");
 String driverClass = ElementParameterParser.getValue(node, "__DRIVER_CLASS__");
 String jdbcUrl = ElementParameterParser.getValue(node, "__URL__");
 String dbuser = ElementParameterParser.getValue(node, "__USER__");
-String dbpwd = ElementParameterParser.getValue(node, "__PASS__");
 String tableName = ElementParameterParser.getValue(node, "__TABLE__");
 String dataAction = ElementParameterParser.getValue(node, "__DATA_ACTION__");
 String clearTable = ElementParameterParser.getValue(node, "__CLEAR_TABLE__");
@@ -134,7 +133,14 @@ if(("true").equals(useExistingConn)){
 	%>
 			java.lang.Class.forName(<%=driverClass %>);
 			String connectionString_<%=cid %> = <%=jdbcUrl %>;
-			connection_<%=cid %> = java.sql.DriverManager.getConnection(connectionString_<%=cid %>, <%=dbuser %>, <%=dbpwd %>);
+			
+            <%
+            String passwordFieldName = "__PASS__";
+            %>
+            
+            <%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>  			
+			
+			connection_<%=cid %> = java.sql.DriverManager.getConnection(connectionString_<%=cid %>, <%=dbuser %>, decryptedPassword_<%=cid%>);
 	<%
 	if(specify_alias){
 	%>

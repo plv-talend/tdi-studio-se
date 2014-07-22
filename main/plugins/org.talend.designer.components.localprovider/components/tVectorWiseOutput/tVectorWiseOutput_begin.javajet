@@ -35,8 +35,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 	
 	String dbuser= ElementParameterParser.getValue(node, "__USER__");
 	
-	String dbpwd= ElementParameterParser.getValue(node, "__PASS__");
-	
 	String tableName = ElementParameterParser.getValue(node,"__TABLE__");
 	
 	String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");
@@ -128,7 +126,14 @@ if(useExistingConnection) {
 	java.lang.Class.forName("com.ingres.jdbc.IngresDriver");
 	String url_<%=cid %> = "jdbc:ingres://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%>;
 	String dbUser_<%=cid %> = <%=dbuser%>;
-	String dbPwd_<%=cid %> = <%=dbpwd%>;
+	<%
+	String passwordFieldName = "__PASS__";
+	%>
+
+	<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>
+
+	String dbPwd_<%=cid %> = decryptedPassword_<%=cid%>;
+
 	java.sql.Connection conn_<%=cid%> = java.sql.DriverManager.getConnection(url_<%=cid %>,dbUser_<%=cid%>,dbPwd_<%=cid%>);
 	resourceMap.put("conn_<%=cid%>", conn_<%=cid%>);
 	conn_<%=cid%>.setAutoCommit(false);

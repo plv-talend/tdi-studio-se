@@ -45,8 +45,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 	
 	String dbuser= ElementParameterParser.getValue(node, "__USER__");
 	
-	String dbpwd= ElementParameterParser.getValue(node, "__PASS__");
-	
 	String table = ElementParameterParser.getValue(node,"__TABLE__");
 	
 	String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");
@@ -190,7 +188,14 @@ if(useExistingConnection) {
 	    url_<%=cid%> = "jdbc:mysql://" + <%=dbhost%> + ":" + <%=dbport%> + "/" + <%=dbname%> + "?" + properties_<%=cid%>;
 	}
     String dbUser_<%=cid %> = <%=dbuser%>;
-    String dbPwd_<%=cid %> = <%=dbpwd%>;    
+    
+    <%
+    String passwordFieldName = "__PASS__";
+    %>
+    
+    <%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>      
+    
+    String dbPwd_<%=cid %> = decryptedPassword_<%=cid%>;    
 	java.lang.Class.forName("<%=javaDbDriver %>");
 	conn_<%=cid%> = java.sql.DriverManager.getConnection(url_<%=cid %>, dbUser_<%=cid%>, dbPwd_<%=cid%>);
 	resourceMap.put("conn_<%=cid%>", conn_<%=cid%>);

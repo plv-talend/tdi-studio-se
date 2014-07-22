@@ -42,8 +42,6 @@ skeleton="../templates/db_output_bulk.skeleton"
     
     String dbuser= ElementParameterParser.getValue(node, "__USER__");
     
-    String dbpwd= ElementParameterParser.getValue(node, "__PASS__");
-    
     String table = ElementParameterParser.getValue(node,"__TABLE__");
     
     String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");

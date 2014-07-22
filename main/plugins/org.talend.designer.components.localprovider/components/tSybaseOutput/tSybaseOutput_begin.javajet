@@ -38,8 +38,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 	
 	String dbuser= ElementParameterParser.getValue(node, "__USER__");
 	
-	String dbpwd= ElementParameterParser.getValue(node, "__PASS__");
-	
 	String table = ElementParameterParser.getValue(node,"__TABLE__");
 	
 	String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");
@@ -145,7 +143,14 @@ if(useExistingConn){
 } else {
     %> 
     String dbUser_<%=cid %> = <%=dbuser %>;
-    String dbPwd_<%=cid %> = <%=dbpwd %>;
+    <%
+    String passwordFieldName = "__PASS__";
+    %>
+
+    <%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>
+
+    String dbPwd_<%=cid %> = decryptedPassword_<%=cid%>;
+
     java.lang.Class.forName("com.sybase.jdbc3.jdbc.SybDriver");
 <%
 	if(dbproperties == null || ("\"\"").equals(dbproperties) || ("").equals(dbproperties)) {
