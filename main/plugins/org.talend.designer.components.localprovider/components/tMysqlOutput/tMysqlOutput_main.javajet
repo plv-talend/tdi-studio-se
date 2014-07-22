@@ -1841,7 +1841,7 @@ if(columnList != null && columnList.size() > 0) {
                 try {
 						int countSum_<%=cid%> = 0;
 						for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
-							countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+							countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : 1);
 						}                  	
             	    	<%if (("INSERT").equals(dataAction)) {
             	    	%>
@@ -1959,7 +1959,7 @@ if(columnList != null && columnList.size() > 0) {
 							log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
 						<%}%>
 						for(int countEach_<%=cid%>: pstmt_<%=cid %>.executeBatch()) {
-							countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : countEach_<%=cid%>);
+							countSum_<%=cid%> += (countEach_<%=cid%> < 0 ? 0 : <%=("INSERT").equals(dataAction)? "1" : "countEach_" +cid%>);
 						}
 						<%if (isLog4jEnabled) {%>						
 							log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
