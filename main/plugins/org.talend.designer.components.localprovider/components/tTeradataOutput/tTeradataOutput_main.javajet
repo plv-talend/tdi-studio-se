@@ -209,8 +209,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 	}
     if(isEnableDebug) {
         %>
-        StringBuffer query_<%=cid%> = null;
-       	<%@ include file="../templates/DB/Output/splitSQLForAllDBInBegin.javajet" %>
+       	<%@ include file="../templates/DB/Output/splitSQLForAllDBInDynamicMain.javajet" %>
         <%
     }
 }

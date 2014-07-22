@@ -571,6 +571,10 @@ if(isDynamic) {
 	java.sql.PreparedStatement pstmtInsert_<%=cid %> =null;
 	java.sql.PreparedStatement pstmtUpdate_<%=cid %> =null;
 	int rowCount<%=cid%>=0;
+	<%if(isEnableDebug) {%>
+		StringBuffer query_<%=cid%> = null;
+		<%@ include file="../templates/DB/Output/splitSQLForAllDBInDynamicBegin.javajet" %>
 <%
+	}
 }
 %>

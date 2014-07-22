@@ -437,8 +437,7 @@ if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("t
     }
     if(isEnableDebug) {
         %>
-        StringBuffer query_<%=cid%> = null;
-       	<%@ include file="../templates/DB/Output/splitSQLForAllDBInBegin.javajet" %>
+       	<%@ include file="../templates/DB/Output/splitSQLForAllDBInDynamicMain.javajet" %>
         <%
     }
 }
