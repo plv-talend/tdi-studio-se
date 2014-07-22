@@ -1061,42 +1061,6 @@ IMetadataColumn talendDynCol = null;
 				<% } %>
                 updateFlag_<%=cid%> = pstmtUpdate_<%=cid %>.executeUpdate();
                 updatedCount_<%=cid%> = updatedCount_<%=cid%>+updateFlag_<%=cid%>;
-            } catch(java.lang.Exception e_<%=cid%>) {
-                whetherReject_<%=cid%> = true;
-                <%
-                if (("true").equals(dieOnError)) {
-                    %>
-                    <%if(isLog4jEnabled){%>
-						log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-					<%}%>
-                    throw(e_<%=cid%>);
-                    <%
-                } else {
-	                if(isLog4jEnabled){%>
-						log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-					<%}
-                    if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
-                        %>
-                        <%=rejectConnName %> = new <%=rejectConnName %>Struct();
-                        <%
-                        for(IMetadataColumn column : columnList) {
-                            %>
-                            <%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
-                            <%
-                        }
-                        %>
-                        rejectedCount_<%=cid%> = rejectedCount_<%=cid%> + 1;
-                        <%=rejectConnName%>.errorCode = ((java.sql.SQLException)e_<%=cid%>).getSQLState();
-                        <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
-                        <%
-                    } else {
-                        %>
-                        System.err.print(e_<%=cid%>.getMessage());
-                        <%
-                    }
-                } 
-                %>
-            }
             if(updateFlag_<%=cid%> == 0) {
             
 				<%
@@ -1125,10 +1089,15 @@ IMetadataColumn talendDynCol = null;
                     }
                 }
 				if(isDynamic) {
-					Column dynamicColumn = getColumn(getDynamicColumn());
+					Column dynamicColumn = getColumn(talendDynCol);
 					String typeToGenerate = JavaTypesManager.getTypeToGenerate(dynamicColumn.getColumn().getTalendType(), dynamicColumn.getColumn().isNullable());
 					if("Dynamic".equals(typeToGenerate)) {
-					%>
+						if(isEnableDebug) {
+						%>
+							routines.system.DynamicUtils.debugDynamicSql(query_<%=cid%>,<%=incomingConnName%>.<%=dynamicColumn.getName()%>, <%=counter%>,insertSQLSplits_<%=cid%>);
+	                			<%
+	    					}
+						%>
 						DynamicUtils.writeColumnsToDatabse(<%=incomingConnName%>.<%=dynamicColumn.getName()%>, pstmtInsert_<%=cid%>, <%=counter-1%>, "<%=dbmsId%>");
 					<%
 					}
@@ -1139,12 +1108,11 @@ IMetadataColumn talendDynCol = null;
                     <%
                 }                
         		%>
-                try {
 					<%	if(isLog4jEnabled) { %>
 						dataOperationPrefix_<%=cid%> = "Inserting";
 					<% } %>
                     insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmtInsert_<%=cid %>.executeUpdate();
-                   
+             }
                 } catch(java.lang.Exception e_<%=cid%>) {
                     whetherReject_<%=cid%> = true;
                     <%
@@ -1181,7 +1149,6 @@ IMetadataColumn talendDynCol = null;
                     } 
                     %>
                 }
-            }
             nb_line_<%=cid%>++;
             <%
     	
