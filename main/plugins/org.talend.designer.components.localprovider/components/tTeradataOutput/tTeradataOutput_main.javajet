@@ -743,7 +743,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 					<%
 					}
 					%>
-				%>
 				
 					int count_<%=cid%>=DynamicUtils.writeColumnsToDatabse(<%=incomingConnName%>.<%=dynamicColumn.getName()%>, pstmtUpdate_<%=cid%>, <%=counterColUpdate-1%>, "<%=dbmsId%>");
 				<%
