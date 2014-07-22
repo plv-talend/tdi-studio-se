@@ -5,7 +5,6 @@
 Boolean isParallelize ="true".equalsIgnoreCase(ElementParameterParser.getValue(node, "__PARALLELIZE__"));
 String dbms=ElementParameterParser.getValue(node, "__MAPPING__");
 boolean isLog4jEnabled_tableAction = ("true").equals(ElementParameterParser.getValue(node.getProcess(), "__LOG4J_ACTIVATE__"));
-boolean convertToUppercase = ("true").equals(ElementParameterParser.getValue(node, "__CONVERT_COLUMN_TABLE_TO_UPPERCASE__"));
 if (!isParallelize) {
 //end issue 0010346 Parallelization crash with "Drop table if exists and create"
 	manager = getManager(dbmsId, cid);
@@ -14,7 +13,7 @@ if (!isParallelize) {
 	if("VECTORWISE".equalsIgnoreCase(dbmsId)) {
 		ending="WITH STRUCTURE = VECTORWISE";
 	}
-	boolean useCascade = "true".equals(ElementParameterParser.getValue(node,"__USE_CASCADE__"));
+
 	if(!("NONE").equals(tableAction)) {
 
         if(("DROP_CREATE").equals(tableAction)) {
@@ -23,7 +22,7 @@ if (!isParallelize) {
         	<%if(isLog4jEnabled_tableAction){%>
 				log.info("<%=cid%> - Droping table '" + tableName_<%=cid%> + "'.");
 			<%}%>
-			stmtDrop_<%=cid%>.execute("<%=manager.getDropTableSQL()%>" <%=(useCascade ? " + \" cascade\"" : "")%>);
+            stmtDrop_<%=cid%>.execute("<%=manager.getDropTableSQL()%>");
         	<%if(isLog4jEnabled_tableAction){%>
 				log.info("<%=cid%> - Drop table '" + tableName_<%=cid%> + "' has succeeded.");
 			<%}%>
@@ -39,7 +38,7 @@ if (!isParallelize) {
 					IConnection conn = conns_dynamic.get(0);
 					String query=manager.getCreateTableSQL(stmtStructure);
 %>
-					stmtCreate_<%=cid%>.execute((("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>")<%if(convertToUppercase){%>.toUpperCase()<%}%>);
+					stmtCreate_<%=cid%>.execute(("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>");
 <%
 				}
 			} else {
@@ -47,14 +46,7 @@ if (!isParallelize) {
 				stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");
 <%
 			}
-			if(FIREBIRD.equalsIgnoreCase(dbmsId)) {
-			%>
-				if(!conn_<%=cid%>.getAutoCommit()) {
-                	conn_<%=cid%>.commit();
-                }
-			<%
-            }
-			%>
+%>
         	<%if(isLog4jEnabled_tableAction){%>
 				log.info("<%=cid%> - Create table '" + tableName_<%=cid%> + "' has succeeded.");
 			<%}%>
@@ -74,7 +66,7 @@ if (!isParallelize) {
 					IConnection conn = conns_dynamic.get(0);
 					String query=manager.getCreateTableSQL(stmtStructure);
 %>
-					stmtCreate_<%=cid%>.execute((("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>")<%if(convertToUppercase){%>.toUpperCase()<%}%>);
+					stmtCreate_<%=cid%>.execute(("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>");
 <%
 				}
 			} else {
@@ -82,14 +74,7 @@ if (!isParallelize) {
 				stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");
 <%
 			}
-			if(FIREBIRD.equalsIgnoreCase(dbmsId)) {
-			%>
-				if(!conn_<%=cid%>.getAutoCommit()) {
-                	conn_<%=cid%>.commit();
-                }
-			<%
-            }
-			%>
+%>
         	<%if(isLog4jEnabled_tableAction){%>
 				log.info("<%=cid%> - Create table '" + tableName_<%=cid%> + "' has succeeded.");
 			<%}%>
@@ -187,7 +172,7 @@ if (!isParallelize) {
 	            while(rsTable_<%=cid%>.next()) {
 	                String table_<%=cid%> = rsTable_<%=cid%>.getString("TABLE_NAME");
 	                String schema_<%=cid%> = rsTable_<%=cid%>.getString("TABLE_SCHEM");
-	                if(table_<%=cid%>.equals<%if(!tableNameCaseSensitive){%>IgnoreCase<%}%>((<%=table%>)<%if(convertToUppercase){%>.toUpperCase()<%}%>) 
+	                if(table_<%=cid%>.equals<%if(!tableNameCaseSensitive){%>IgnoreCase<%}%>(<%=table%>) 
 	                	&& (schema_<%=cid%>.equals<%if(!tableNameCaseSensitive){%>IgnoreCase<%}%>(dbschema_<%=cid%>) || (dbschema_<%=cid%>.trim().length() ==0 && dbUser_<%=cid%>.equalsIgnoreCase(schema_<%=cid%>)))) {
 	                    whetherExist_<%=cid%> = true;
 	                    break;
@@ -195,7 +180,7 @@ if (!isParallelize) {
 	            }
 	            rsTable_<%=cid%>.close();
 <%
-			} else if ( GREENPLUM.equalsIgnoreCase(dbmsId) || POSTGRESQL.equalsIgnoreCase(dbmsId) || POSTGREPLUS.equalsIgnoreCase(dbmsId) || VERTICA.equalsIgnoreCase(dbmsId)) {
+			} else if ( GREENPLUM.equalsIgnoreCase(dbmsId) || POSTGRESQL.equalsIgnoreCase(dbmsId) || POSTGREPLUS.equalsIgnoreCase(dbmsId)) {
 %>  	            
 				java.sql.DatabaseMetaData dbMetaData_<%=cid%> = conn_<%=cid%>.getMetaData();
 	            java.sql.ResultSet rsTable_<%=cid%> = dbMetaData_<%=cid%>.getTables(null, null, null, new String[]{"TABLE"});
@@ -252,7 +237,7 @@ if (!isParallelize) {
 					IConnection conn = conns_dynamic.get(0);
 					String query=manager.getCreateTableSQL(stmtStructure);
 %>
-					stmtCreate_<%=cid%>.execute((("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>")<%if(convertToUppercase){%>.toUpperCase()<%}%>);
+					stmtCreate_<%=cid%>.execute(("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>");
 <%
 				}
 			} else {
@@ -260,14 +245,7 @@ if (!isParallelize) {
 				stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");
 <%
 			}
-			if(FIREBIRD.equalsIgnoreCase(dbmsId)) {
-			%>
-				if(!conn_<%=cid%>.getAutoCommit()) {
-                	conn_<%=cid%>.commit();
-                }
-			<%
-            }
-			%>
+%>
     		   	<%if(isLog4jEnabled_tableAction){%>
 					log.info("<%=cid%> - Create table '" + tableName_<%=cid%> + "' has succeeded.");
 				<%}%>
@@ -281,7 +259,7 @@ if (!isParallelize) {
 	    	    	<%if(isLog4jEnabled_tableAction){%>
 						log.info("<%=cid%> - Droping table '" + tableName_<%=cid%> + "'.");
 					<%}%>
-                    stmtDrop_<%=cid%>.execute("<%=manager.getDropTableSQL()%>" <%=(useCascade ? " + \" cascade\"" : "")%>);
+                    stmtDrop_<%=cid%>.execute("<%=manager.getDropTableSQL()%>");
 	    	    	<%if(isLog4jEnabled_tableAction){%>
 						log.info("<%=cid%> - Drop table '" + tableName_<%=cid%>+ "' has succeeded.");
 					<%}%>
@@ -298,7 +276,7 @@ if (!isParallelize) {
 					IConnection conn = conns_dynamic.get(0);
 					String query=manager.getCreateTableSQL(stmtStructure);
 %>
-					stmtCreate_<%=cid%>.execute((("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>")<%if(convertToUppercase){%>.toUpperCase()<%}%>);
+					stmtCreate_<%=cid%>.execute(("<%=query%>").replace("{TALEND_DYNAMIC_COLUMN}",DynamicUtils.getCreateTableSQL(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbms==null?"":dbms.toLowerCase()%>"))+")<%=ending%>");
 <%
 				}
 			} else {
@@ -306,14 +284,7 @@ if (!isParallelize) {
 				stmtCreate_<%=cid%>.execute("<%=manager.getCreateTableSQL(stmtStructure)%>)");
 <%
 			}
-			if(FIREBIRD.equalsIgnoreCase(dbmsId)) {
-			%>
-				if(!conn_<%=cid%>.getAutoCommit()) {
-                	conn_<%=cid%>.commit();
-				}
-			<%
-			}
-			%>
+%>
 	    	    	<%if(isLog4jEnabled_tableAction){%>
 						log.info("<%=cid%> - Create table '" + tableName_<%=cid%> + "' has succeeded.");
 					<%}%>
@@ -340,7 +311,7 @@ if (!isParallelize) {
     	   <%if(isLog4jEnabled_tableAction){%>
 					log.info("<%=cid%> - Clearing table '" + tableName_<%=cid%> + "'.");
 			<%}%>
-            deletedCount_<%=cid%> = deletedCount_<%=cid%> + stmtClear_<%=cid%>.executeUpdate("<%=manager.getDeleteTableSQL()%>");
+            stmtClear_<%=cid%>.executeUpdate("<%=manager.getDeleteTableSQL()%>");
    	    	<%if(isLog4jEnabled_tableAction){%>
 					log.info("<%=cid%>- Clear table '" + tableName_<%=cid%> + "' has succeeded.");
 			<%}%>
