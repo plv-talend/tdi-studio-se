@@ -47,7 +47,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 	boolean useCascade = "true".equals(ElementParameterParser.getValue(node,"__USE_CASCADE__"));
 	
 	boolean createProjection = "true".equals(ElementParameterParser.getValue(node,"__CREATE_PROJECTION__"))&&
-		"false".equalsIgnoreCase(ElementParameterParser.getValue(node, "__PARALLELIZE__")); 
+		!"true".equalsIgnoreCase(ElementParameterParser.getValue(node, "__PARALLELIZE__")); 
 	
 	String commitEvery = ElementParameterParser.getValue(node, "__COMMIT_EVERY__");
 
