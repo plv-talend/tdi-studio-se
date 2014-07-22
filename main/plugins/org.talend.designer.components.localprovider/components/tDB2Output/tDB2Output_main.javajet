@@ -29,7 +29,7 @@ skeleton="../templates/db_output_bulk.skeleton"
 	String tableAction = ElementParameterParser.getValue(node,"__TABLE_ACTION__");	
 	List<Map<String, String>> addCols =
             (List<Map<String,String>>)ElementParameterParser.getObjectValue(node,"__ADD_COLS__");
-
+	boolean convertToUppercase = ("true").equals(ElementParameterParser.getValue(node, "__CONVERT_COLUMN_TABLE_TO_UPPERCASE__"));
     boolean useFieldOptions = ("true").equals(ElementParameterParser.getValue(node, "__USE_FIELD_OPTIONS__"));
     
     List<Map<String, String>> fieldOptions = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__FIELD_OPTIONS__");	
@@ -130,6 +130,11 @@ skeleton="../templates/db_output_bulk.skeleton"
 				String insert_<%=cid%> = "INSERT INTO \"" + tableName_<%=cid%> + "\" ("+DynamicUtils.getInsertIntoStmtColumnsList(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbmsId %>")+") VALUES ("+DynamicUtils.getInsertIntoStmtValuesList(<%=conn.getName()%>.<%=getDynamicColumn()%>)+")";
 <%
 			}
+			if(convertToUppercase){
+            %>
+                insert_<%=cid%> = insert_<%=cid%>.toUpperCase();
+            <%
+            }
 		}
 	    %>
 		pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
@@ -146,6 +151,11 @@ skeleton="../templates/db_output_bulk.skeleton"
 				String update_<%=cid%> = "UPDATE \"" + tableName_<%=cid%> + "\" SET "+DynamicUtils.getUpdateSet(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbmsId %>")+" WHERE <%=updateWhereStmt.toString()%>";
 <%
 			}
+			if(convertToUppercase){
+            %>
+                update_<%=cid%> = update_<%=cid%>.toUpperCase();
+            <%
+            }
 		}
 	    %>
 		pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(update_<%=cid%>);
@@ -170,6 +180,12 @@ skeleton="../templates/db_output_bulk.skeleton"
 				String update_<%=cid%> = "UPDATE \"" + tableName_<%=cid%> + "\" SET "+DynamicUtils.getUpdateSet(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbmsId %>")+" WHERE <%=updateWhereStmt.toString()%>";
 <%
 			}
+			if(convertToUppercase){
+            %>
+                insert_<%=cid%> = insert_<%=cid%>.toUpperCase();
+                update_<%=cid%> = update_<%=cid%>.toUpperCase();
+            <%
+            }
 		}
 	    %>
 	    pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement("SELECT COUNT(1) FROM \"" + tableName_<%=cid%> + "\" WHERE <%=updateWhereStmt.toString()%>");
@@ -196,6 +212,12 @@ skeleton="../templates/db_output_bulk.skeleton"
 				String update_<%=cid%> = "UPDATE \"" + tableName_<%=cid%> + "\" SET "+DynamicUtils.getUpdateSet(<%=conn.getName()%>.<%=getDynamicColumn()%>, "<%=dbmsId %>")+" WHERE <%=updateWhereStmt.toString()%>";
 <%
 			}
+			if(convertToUppercase){
+            %>
+                insert_<%=cid%> = insert_<%=cid%>.toUpperCase();
+                update_<%=cid%> = update_<%=cid%>.toUpperCase();
+            <%
+            }
 		}
 	    %>
 	    pstmtUpdate_<%=cid %> = conn_<%=cid%>.prepareStatement(update_<%=cid%>);
@@ -205,7 +227,12 @@ skeleton="../templates/db_output_bulk.skeleton"
 	    %>
 	    String delete_<%=cid%> = "DELETE  FROM \"" + tableName_<%=cid%> + "\" WHERE <%=deleteWhereStmt.toString()%>";
 	    pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(delete_<%=cid%>);
-	    <%		
+	    <%
+	    if(convertToUppercase){
+        %>
+            delete_<%=cid%> = delete_<%=cid%>.toUpperCase();
+        <%
+        }
 	}
     if(isEnableDebug) {
         %>
