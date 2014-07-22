@@ -107,11 +107,15 @@ if(("true").equals(useExistingConn)){
 	} 
 	boolean specify_alias = "true".equals(ElementParameterParser.getValue(connectionNode, "__SPECIFY_DATASOURCE_ALIAS__"));
 	if(specify_alias){
-		String alias = ElementParameterParser.getValue(connectionNode, "__DATASOURCE_ALIAS__"); 
+		String alias = ElementParameterParser.getValue(connectionNode, "__DATASOURCE_ALIAS__");
+		String autoCommit = "true".equals(ElementParameterParser.getValue(connectionNode, "__AUTO_COMMIT__"))?"true":"false"; 
 %> 
 		if (null == connection_<%=cid %>) {
 			java.util.Map<String, routines.system.TalendDataSource> dataSources_<%=cid%> = (java.util.Map<String, routines.system.TalendDataSource>) globalMap.get(KEY_DB_DATASOURCES); 
 			connection_<%=cid %> = dataSources_<%=cid%>.get(<%=(null != alias && !("".equals(alias)))?alias:"\"\""%>).getConnection();
+			if (connection_<%=cid%> != null) { 
+				connection_<%=cid%>.setAutoCommit(<%=autoCommit%>);
+			}
 		}
 	<%
 	}
