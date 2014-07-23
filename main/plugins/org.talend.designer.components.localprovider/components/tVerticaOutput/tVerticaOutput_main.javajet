@@ -61,35 +61,36 @@ skeleton="../templates/db_output_bulk.skeleton"
 					    	Object currentValue_<%=cid%> = <%=incomingConnName %>.<%=column.getLabel() %>.getColumnValue(i_<%=cid%>);
 					    	if(currentValue_<%=cid%> == null) {
 					    		stmtBuilder_<%=cid%>.append("");
-					    		continue;
-					    	}
-					    	stmtBuilder_<%=cid%>.append("|");
-					    	routines.system.DynamicMetadata metadata_<%=cid%> = <%=incomingConnName %>.<%=column.getLabel() %>.getColumnMetadata(i_<%=cid%>);
-					    	if("id_String".equals(metadata_<%=cid%>.getType())) {
-					    		stmtBuilder_<%=cid%>.append(String.valueOf(currentValue_<%=cid%>).replaceAll("\\|","\\\\|"));
-					    	} else if("id_Date".equals(metadata_<%=cid%>.getType())) {
-					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Date((java.util.Date)currentValue_<%=cid%>, <%= pattern %>));
-					    	} else if("id_Byte".equals(metadata_<%=cid%>.getType()) 
-					    		|| "id_Short".equals(metadata_<%=cid%>.getType()) 
-					    		|| "id_Integer".equals(metadata_<%=cid%>.getType()) 
-					    		|| "id_Long".equals(metadata_<%=cid%>.getType())
-					    	) {
-					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(currentValue_<%=cid%>), null, '.'));
-					    	} else if("id_BigDecimal".equals(metadata_<%=cid%>.getType())) {
-					    		BigDecimal decimal_<%=cid%> = (BigDecimal)currentValue_<%=cid%>;
-					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_" + cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
-					    	} else if("id_Float".equals(metadata_<%=cid%>.getType())) {
-					    		BigDecimal decimal_<%=cid%> = new BigDecimal((Float)currentValue_<%=cid%>);
-								stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_"+cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
-					    	} else if("id_Double".equals(metadata_<%=cid%>.getType())) {
-					    		BigDecimal decimal_<%=cid%> = new BigDecimal((Double)currentValue_<%=cid%>);
-					    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_"+cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
-					    	} else if("id_byte[]".equals(metadata_<%=cid%>.getType())) {
-					    		stmtBuilder_<%=cid%>.append(java.nio.charset.Charset.defaultCharset().decode(java.nio.ByteBuffer.wrap((byte[])currentValue_<%=cid%>)).toString());
 					    	} else {
-					    		stmtBuilder_<%=cid%>.append(String.valueOf(currentValue_<%=cid%>));
-					    	}
-					    	stmtBuilder_<%=cid%>.append("|");
+						    	stmtBuilder_<%=cid%>.append("|");
+						    	routines.system.DynamicMetadata metadata_<%=cid%> = <%=incomingConnName %>.<%=column.getLabel() %>.getColumnMetadata(i_<%=cid%>);
+						    	if("id_String".equals(metadata_<%=cid%>.getType())) {
+						    		stmtBuilder_<%=cid%>.append(String.valueOf(currentValue_<%=cid%>).replaceAll("\\|","\\\\|"));
+						    	} else if("id_Date".equals(metadata_<%=cid%>.getType())) {
+						    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Date((java.util.Date)currentValue_<%=cid%>, <%= pattern %>));
+						    	} else if("id_Byte".equals(metadata_<%=cid%>.getType()) 
+						    		|| "id_Short".equals(metadata_<%=cid%>.getType()) 
+						    		|| "id_Integer".equals(metadata_<%=cid%>.getType()) 
+						    		|| "id_Long".equals(metadata_<%=cid%>.getType())
+						    	) {
+						    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(currentValue_<%=cid%>), null, '.'));
+						    	} else if("id_BigDecimal".equals(metadata_<%=cid%>.getType())) {
+						    		BigDecimal decimal_<%=cid%> = (BigDecimal)currentValue_<%=cid%>;
+						    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_" + cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
+						    	} else if("id_Float".equals(metadata_<%=cid%>.getType())) {
+						    		BigDecimal decimal_<%=cid%> = new BigDecimal((Float)currentValue_<%=cid%>);
+									stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_"+cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
+						    	} else if("id_Double".equals(metadata_<%=cid%>.getType())) {
+						    		BigDecimal decimal_<%=cid%> = new BigDecimal((Double)currentValue_<%=cid%>);
+						    		stmtBuilder_<%=cid%>.append(FormatterUtils.format_Number(String.valueOf(<%=column.getPrecision() == null? "currentValue_" + cid : "decimal_"+cid + ".setScale(" + column.getPrecision() + ", java.math.RoundingMode.HALF_UP)" %>), null, '.'));
+						    	} else if("id_byte[]".equals(metadata_<%=cid%>.getType())) {
+						    		stmtBuilder_<%=cid%>.append(java.nio.charset.Charset.defaultCharset().decode(java.nio.ByteBuffer.wrap((byte[])currentValue_<%=cid%>)).toString());
+						    	} else {
+						    		stmtBuilder_<%=cid%>.append(String.valueOf(currentValue_<%=cid%>));
+						    	}
+						    	stmtBuilder_<%=cid%>.append("|");
+						    }
+						    
 					    	if(i_<%=cid%> < (<%=incomingConnName %>.<%=column.getLabel() %>.getColumnCount() - 1)) {
 					    		stmtBuilder_<%=cid%>.append(";");
 					    	}
