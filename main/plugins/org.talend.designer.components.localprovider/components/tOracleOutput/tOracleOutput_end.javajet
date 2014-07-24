@@ -11,7 +11,7 @@ imports="
 "
 %>
 
-<%
+	<%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
 	IProcess process = node.getProcess();
@@ -58,7 +58,7 @@ imports="
 	      	targetSRID = Integer.parseInt(ElementParameterParser.getValue(node,"__SRID__"));
 	    }
 	    catch (NumberFormatException e) {
-			%>
+		%>
 	     	// TODO unable to parse integer: <%=ElementParameterParser.getValue(node,"__SRID__")%>
 	     	// TODO error: <%=e.getMessage()%>
 			<%
@@ -91,10 +91,10 @@ imports="
     	}
         
         stmtCreateGeoColumns_<%=cid%>.close();
-		<%
+	<%
 	}
 	if (createSpatialIndex && useSpatialOptions) {
-		%>
+	%>
 		for (String geometryColumnName: geometryColumnToExtends.keySet()) {
 
 			String index_name = "spatialidx_"+<%=tableName %>+"_" + geometryColumnName;
@@ -133,10 +133,9 @@ imports="
 			<%}%>
 	        stmtCreateIndex_<%=cid%>.close();
 	    }
-		<%
+	<%
 	}
     
-	
     String rejectConnName = null;
     List<? extends IConnection> rejectConns = node.getOutgoingConnections("REJECT");
     if(rejectConns != null && rejectConns.size() > 0) {
@@ -146,7 +145,7 @@ imports="
 
 	
     if(("INSERT_OR_UPDATE").equals(dataAction)) {
-        %>
+    %>
         if(pstmtUpdate_<%=cid%> != null){
 
             pstmtUpdate_<%=cid %>.close();
@@ -162,9 +161,9 @@ imports="
             pstmt_<%=cid %>.close();
             
         }        
-        <%
+    <%
     } else if(("UPDATE_OR_INSERT").equals(dataAction)) {
-        %>
+    %>
         if(pstmtUpdate_<%=cid%> != null){
 
             pstmtUpdate_<%=cid %>.close();
@@ -175,57 +174,65 @@ imports="
             pstmtInsert_<%=cid %>.close();
             
         }        
-        <%
+    <%
     } else { // dataAction equals "INSERT" or "UPDATE" or "DELETE" 
-        %>
-            <%if ((rejectConnName==null && isUseBatchByDBVersion && !useExistingConnection) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
-            %>                
-                try {
-                	if (pstmt_<%=cid %> != null) { 
-						<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>
-							log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
-						<%}%>
-						pstmt_<%=cid %>.executeBatch();
-						<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>						
-							log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
-						<%}%>
-            	    }          	    
-                }catch (java.sql.BatchUpdateException e_<%=cid%>){
-                	<%if(("true").equals(dieOnError)) {
-                	%>
-						<%if(isLog4jEnabled){%>
-							log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%}%>
-                		throw(e_<%=cid%>);
-                	<%
-                	}else {
-                	%>
-					<%if(isLog4jEnabled){%>
-						log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-					<%}%>
-                	System.out.println(e_<%=cid%>.getMessage());
-                	<%
-                	}%>                	
-            	}
+    	if ((rejectConnName==null && isUseBatchByDBVersion && !useExistingConnection) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction))) {
+        %>                
+            try {
             	if (pstmt_<%=cid %> != null) { 
-	            	tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();            	
-	    	    	<%if (("INSERT").equals(dataAction)) {
-	    	    	%>
-	    	    		insertedCount_<%=cid%> 
-	    	    	<%
-	    	    	}else if (("UPDATE").equals(dataAction)) {
-	    	    	%>
-	    	    		updatedCount_<%=cid%>
-	    	    	<%
-	    	    	}else if (("DELETE").equals(dataAction)) {
-	    	    	%>
-	    	    	    deletedCount_<%=cid%>
-	    	    	<%
-	    	    	}%>
-	    	    	+= (tmp_batchUpdateCount_<%=cid%>!=-1?tmp_batchUpdateCount_<%=cid%>:0);                                  
-                }
-            <%
-            }%>        
+					<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>
+						log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
+					<%}%>
+					pstmt_<%=cid %>.executeBatch();
+					<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>						
+						log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
+					<%}%>
+        	    }          	    
+            }catch (java.sql.BatchUpdateException e_<%=cid%>){
+            	<%
+            	if(("true").equals(dieOnError)) {
+            		if(isLog4jEnabled){
+            		%>
+						log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
+					<%
+					}
+					%>
+            		throw(e_<%=cid%>);
+            	<%
+            	}else {
+            		if(isLog4jEnabled){
+            		%>
+						log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
+    				<%
+    				}
+    				%>
+                	System.out.println(e_<%=cid%>.getMessage());
+            	<%
+            	}
+            	%>                	
+        	}
+        	if (pstmt_<%=cid %> != null) { 
+            	tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();            	
+    	    	<%
+    	    	if (("INSERT").equals(dataAction)) {
+    	    	%>
+    	    		insertedCount_<%=cid%> 
+    	    	<%
+    	    	}else if (("UPDATE").equals(dataAction)) {
+    	    	%>
+    	    		updatedCount_<%=cid%>
+    	    	<%
+    	    	}else if (("DELETE").equals(dataAction)) {
+    	    	%>
+    	    	    deletedCount_<%=cid%>
+    	    	<%
+    	    	}
+    	    	%>
+    	    	+= (tmp_batchUpdateCount_<%=cid%>!=-1?tmp_batchUpdateCount_<%=cid%>:0);                                  
+            }
+        <%
+        }
+       	%>        
         if(pstmt_<%=cid %> != null) {            
 			<%
 			//to fixed: bug8422
@@ -240,16 +247,12 @@ imports="
 			}
 			%>                    
         }        
-        <%
-    }   
-    %>
-
     <%
-	if(!useExistingConnection)
-	{
-		if(!("").equals(commitEvery) && !("0").equals(commitEvery))
-		{
-		    %>
+    }   
+    
+	if(!useExistingConnection){
+		if(!("").equals(commitEvery) && !("0").equals(commitEvery)){
+		%>
 			<%if(isLog4jEnabled){%>
 				log.debug("<%=cid%> - Starting to commit " + commitCounter_<%=cid%>+ " records.");
 			<%}%>
@@ -257,7 +260,7 @@ imports="
 			<%if(isLog4jEnabled){%>
 				log.debug("<%=cid%> - Commit has succeeded.");
 			<%}%>
-		    <%
+		<%
 		}
 		%>	
 		<%if(isLog4jEnabled){%>
@@ -268,47 +271,47 @@ imports="
 		<%if(isLog4jEnabled){%>
 			log.info("<%=cid%> - Connection to the database closed.");
 		<%}%>
-    	<%
+   	<%
 	}
     %>
 
 
-<%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>
+	<%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>
 
 	<%
 	if(isLog4jEnabled){
 		if(("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction)) {
     		if (("INSERT").equals(dataAction)) {
-	%>
+			%>
 				log.info("<%=cid%> - Has inserted "+nb_line_inserted_<%=cid%> + " records.");
-	<%
+			<%
     		}else if (("UPDATE").equals(dataAction)) {
-	%>
+			%>
 				log.info("<%=cid%> - Has updated "+nb_line_update_<%=cid%> + " records.");
-	<%
+			<%
     		}else if (("DELETE").equals(dataAction)) {
-	%>
+			%>
 				log.info("<%=cid%> - Has deleted "+nb_line_deleted_<%=cid%> + " records.");
-	<%
+			<%
     		}
     	}else if("UPDATE_OR_INSERT".equals(dataAction)){
-	%>
+		%>
 			log.info("<%=cid%> - Has updated "+nb_line_update_<%=cid%> + " records.");
 			log.info("<%=cid%> - Has inserted "+nb_line_inserted_<%=cid%> + " records.");
-    <%
+   	 	<%
     	}else if("INSERT_OR_UPDATE".equals(dataAction)){
-    %>
+    	%>
 			log.info("<%=cid%> - Has inserted "+nb_line_inserted_<%=cid%> + " records.");
 			log.info("<%=cid%> - Has updated "+nb_line_update_<%=cid%> + " records.");
     
-    <%
+    	<%
     	}
     	if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
-	%>
+		%>
 			log.info("<%=cid%> - Has rejected "+nb_line_rejected_<%=cid%> + " records.");
-	<%
+		<%
 		}
-	%>
+		%>
 		log.info("<%=cid%> - Done.");
 	<%
 	}
