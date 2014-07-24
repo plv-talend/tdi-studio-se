@@ -10,13 +10,13 @@ imports="
 	org.talend.core.model.process.IProcess
 "
 %>
-
+	<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/Log4j/DBLogUtil.javajet"%>
 	<%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
-	IProcess process = node.getProcess();
-	boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(process, "__LOG4J_ACTIVATE__"));
 	String cid = node.getUniqueName();
+	
+	dbLog = new DBLogUtil(node);
 	
 	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
 	
@@ -81,13 +81,9 @@ imports="
 	        										+ "MDSYS.SDO_DIM_ARRAY(MDSYS.SDO_DIM_ELEMENT('x', " + extend.getMinX() + ", " + extend.getMaxX() + ", <%=indexAccuracy %>), "
 	        										+ "MDSYS.SDO_DIM_ELEMENT('y', " + extend.getMinY() + ", " + extend.getMaxY() + ", <%=indexAccuracy %>)), "
 	        										+ <%=targetSRID < 0 ? "\"NULL\"" : targetSRID %> +")";
-			<%if(isLog4jEnabled){%>
-				log.info("<%=cid%> - Executing '" +  insertGeometryColumns_<%=cid %> + "'.");
-			<%}%>										
+			<%dbLog.data().sqlExecuteTry(dbLog.var("insertGeometryColumns"));%>										
 	    	stmtCreateGeoColumns_<%=cid%>.execute(insertGeometryColumns_<%=cid %>);
-	    	<%if(isLog4jEnabled){%>
-				log.info("<%=cid%> - Execute '" + insertGeometryColumns_<%=cid %> + "' has succeeded.");
-			<%}%>
+			<%dbLog.data().sqlExecuteDone(dbLog.var("insertGeometryColumns"));%>
     	}
         
         stmtCreateGeoColumns_<%=cid%>.close();
@@ -106,31 +102,21 @@ imports="
 			// Drop spatial index if exists
 			String dropIndex_<%=cid %> = "DROP INDEX "+index_name;
 	        try {
-	        	<%if(isLog4jEnabled){%>
-					log.info("<%=cid%> - Executing '" + dropIndex_<%=cid %> + "'.");
-				<%}%>
+				<%dbLog.data().sqlExecuteTry(dbLog.var("dropIndex"));%>
 				stmtCreateIndex_<%=cid%>.execute(dropIndex_<%=cid %>);
-				<%if(isLog4jEnabled){%>
-					log.info("<%=cid%> - Execute '" + dropIndex_<%=cid%> + "' has succeeded.");
-				<%}%>
+				<%dbLog.data().sqlExecuteDone(dbLog.var("dropIndex"));%>
 			}
 			catch (java.sql.SQLException e_<%=cid%>) {
-				<%if(isLog4jEnabled){%>
-					log.warn("<%=cid%> - " +  e_<%=cid%>.getMessage());
-				<%}%>
+				<%dbLog.logIgnoredException("e_"+cid+".getMessage()");%>
 			}
 			
 			// Create spatial index using GIST on geometry columns
 			String createIndex_<%=cid %> = "CREATE INDEX "+index_name + " " 
 						+ "ON " + <%=tableName %> + "(" + geometryColumnName + ") "
 						+ "INDEXTYPE IS MDSYS.SPATIAL_INDEX";
-			<%if(isLog4jEnabled){%>
-				log.info("<%=cid%> - Executing '" + createIndex_<%=cid %> + "'.");
-			<%}%>
+			<%dbLog.data().sqlExecuteTry(dbLog.var("createIndex"));%>
 	        stmtCreateIndex_<%=cid%>.execute(createIndex_<%=cid %>);
-        	<%if(isLog4jEnabled){%>
-				log.info("<%=cid%> - Execute " + createIndex_<%=cid%> + "' has succeeded.");
-			<%}%>
+			<%dbLog.data().sqlExecuteDone(dbLog.var("createIndex"));%>        	
 	        stmtCreateIndex_<%=cid%>.close();
 	    }
 	<%
@@ -180,31 +166,18 @@ imports="
         %>                
             try {
             	if (pstmt_<%=cid %> != null) { 
-					<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>
-						log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
-					<%}%>
+					<%dbLog.batch().executeTry(dbLog.str(dataAction));%>
 					pstmt_<%=cid %>.executeBatch();
-					<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>						
-						log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
-					<%}%>
+					<%dbLog.batch().executeDone(dbLog.str(dataAction));%>
         	    }          	    
             }catch (java.sql.BatchUpdateException e_<%=cid%>){
             	<%
             	if(("true").equals(dieOnError)) {
-            		if(isLog4jEnabled){
-            		%>
-						log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-					<%
-					}
-					%>
+           		%>
             		throw(e_<%=cid%>);
             	<%
             	}else {
-            		if(isLog4jEnabled){
-            		%>
-						log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-    				<%
-    				}
+    				dbLog.logPrintedException("e_"+cid+".getMessage()");
     				%>
                 	System.out.println(e_<%=cid%>.getMessage());
             	<%
@@ -253,24 +226,16 @@ imports="
 	if(!useExistingConnection){
 		if(!("").equals(commitEvery) && !("0").equals(commitEvery)){
 		%>
-			<%if(isLog4jEnabled){%>
-				log.debug("<%=cid%> - Starting to commit " + commitCounter_<%=cid%>+ " records.");
-			<%}%>
+			<%dbLog.commit().commitTry(null, dbLog.var("commitCounter"));%>
 		    conn_<%=cid%>.commit();
-			<%if(isLog4jEnabled){%>
-				log.debug("<%=cid%> - Commit has succeeded.");
-			<%}%>
+			<%dbLog.commit().commitDone(null);%>
 		<%
 		}
 		%>	
-		<%if(isLog4jEnabled){%>
-			log.info("<%=cid%> - Closing the connection to the database.");
-		<%}%>
+		<%dbLog.conn().closeTry(null);%>
 		conn_<%=cid%> .close();
 		resourceMap.put("finish_<%=cid%>", true);
-		<%if(isLog4jEnabled){%>
-			log.info("<%=cid%> - Connection to the database closed.");
-		<%}%>
+		<%dbLog.conn().closeDone(null);%>
    	<%
 	}
     %>
@@ -278,41 +243,5 @@ imports="
 
 	<%@ include file="../templates/DB/Output/DBOutputEndGlobalVars.javajet"%>
 
-	<%
-	if(isLog4jEnabled){
-		if(("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction)) {
-    		if (("INSERT").equals(dataAction)) {
-			%>
-				log.info("<%=cid%> - Has inserted "+nb_line_inserted_<%=cid%> + " records.");
-			<%
-    		}else if (("UPDATE").equals(dataAction)) {
-			%>
-				log.info("<%=cid%> - Has updated "+nb_line_update_<%=cid%> + " records.");
-			<%
-    		}else if (("DELETE").equals(dataAction)) {
-			%>
-				log.info("<%=cid%> - Has deleted "+nb_line_deleted_<%=cid%> + " records.");
-			<%
-    		}
-    	}else if("UPDATE_OR_INSERT".equals(dataAction)){
-		%>
-			log.info("<%=cid%> - Has updated "+nb_line_update_<%=cid%> + " records.");
-			log.info("<%=cid%> - Has inserted "+nb_line_inserted_<%=cid%> + " records.");
-   	 	<%
-    	}else if("INSERT_OR_UPDATE".equals(dataAction)){
-    	%>
-			log.info("<%=cid%> - Has inserted "+nb_line_inserted_<%=cid%> + " records.");
-			log.info("<%=cid%> - Has updated "+nb_line_update_<%=cid%> + " records.");
-    
-    	<%
-    	}
-    	if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
-		%>
-			log.info("<%=cid%> - Has rejected "+nb_line_rejected_<%=cid%> + " records.");
-		<%
-		}
-		%>
-		log.info("<%=cid%> - Done.");
-	<%
-	}
-	%>
+	<%dbLog.endWork();%>
+	

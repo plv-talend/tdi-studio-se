@@ -15,12 +15,14 @@ imports="
 	" 
 skeleton="../templates/db_output_bulk.skeleton"
 %>
-    <%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
-    
+    <%@ include file="@{org.talend.designer.components.localprovider}/components/templates/Log4j/DBLogUtil.javajet"%>
     <%
     CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
     INode node = (INode)codeGenArgument.getArgument();	
     String cid = node.getUniqueName();	
+    
+    dbLog = new DBLogUtil(node);
+    
     List<Map<String, String>> addCols = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node,"__ADD_COLS__" );    
     boolean useFieldOptions = ("true").equals(ElementParameterParser.getValue(node, "__USE_FIELD_OPTIONS__"));    
     List<Map<String, String>> fieldOptions = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__FIELD_OPTIONS__");    
@@ -44,11 +46,9 @@ skeleton="../templates/db_output_bulk.skeleton"
     boolean useSpatialOptions = ("true").equals(ElementParameterParser.getValue(node,"__USE_SPATIAL_OPTIONS__"));
     boolean createSpatialIndex = ("true").equals(ElementParameterParser.getValue(node,"__SPATIAL_INDEX__"));
     boolean createGeometryColumns = ("true").equals(ElementParameterParser.getValue(node,"__GEOMETRY_COLUMNS__"));
-    IProcess process = node.getProcess();
-    boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(process, "__LOG4J_ACTIVATE__"));
     
-    log4jCodeGenerateUtil.infoComponentStart(node);
-    log4jCodeGenerateUtil.initDbDebugRowBuffer();	
+    dbLog.startWork();
+    
     if (useSpatialOptions) {
     	int targetSRID = -1;
     	try {
@@ -123,9 +123,6 @@ skeleton="../templates/db_output_bulk.skeleton"
             %>
             int updateKeyCount_<%=cid%> = <%=updateKeyCount%>;
             if(updateKeyCount_<%=cid%> < 1) {
-    			<%if(isLog4jEnabled){%>
-    				log.fatal("<%=cid%> - For update ,the schema must have a key");
-    			<%}%>	
                 throw new RuntimeException("For update, the schema must have a key");
             }
         <%
@@ -141,9 +138,6 @@ skeleton="../templates/db_output_bulk.skeleton"
             %>
             int deleteKeyCount_<%=cid%> = <%=deleteKeyCount%>;
             if(deleteKeyCount_<%=cid%> < 1) {
-    			<%if(isLog4jEnabled){%>
-    				log.fatal("<%=cid%> - For delete ,the schema must have a key");
-    			<%}%>	
                 throw new RuntimeException("For delete, the schema must have a key");
             }
         <%
@@ -203,14 +197,7 @@ skeleton="../templates/db_output_bulk.skeleton"
     	}
     	%>
     	
-    	<%if(isLog4jEnabled){%>	
-    		if(conn_<%=cid%> != null) {
-    			if(conn_<%=cid%>.getMetaData() != null) {
-    				log.info("<%=cid%> - Uses an existing connection as " + conn_<%=cid%>.getMetaData().getUserName() + ". Connection URL: " + conn_<%=cid%>.getMetaData().getURL() + ".");
-    			}
-    		}
-    	<%}%>
-    	
+    	<%dbLog.conn().useExistConn("conn_"+cid+".getMetaData().getURL()", "conn_"+cid+".getMetaData().getUserName()");%>
     <%
     } else {
     	boolean specify_alias = "true".equals(ElementParameterParser.getValue(node, "__SPECIFY_DATASOURCE_ALIAS__"));
@@ -229,6 +216,9 @@ skeleton="../templates/db_output_bulk.skeleton"
         		<%}else {%>
         			String driverClass_<%=cid%> = "oracle.jdbc.driver.OracleDriver";
         		<%}%>
+
+        		<%dbLog.conn().logJDBCDriver(dbLog.var("driverClass"));%>
+
     			java.lang.Class.forName(driverClass_<%=cid%>);	
     			<%
         		String connectionType = ElementParameterParser.getValue(node, "__CONNECTION_TYPE__");
@@ -268,12 +258,8 @@ skeleton="../templates/db_output_bulk.skeleton"
     
         		String dbPwd_<%=cid %> = decryptedPassword_<%=cid%>;
         		dbschema_<%=cid%> = <%=tableSchema%>;	
-        		<%
-        		log4jCodeGenerateUtil.debugConnectionParams(node);	
-        		%>	
-        		<%if(isLog4jEnabled){%>
-        			log.info("<%=cid%> - Connection attempt to '" + url_<%=cid%> +"' with the username '" + dbUser_<%=cid%> + "'.");
-        		<%}%>	
+
+        		<%dbLog.conn().connTry(dbLog.var("url"), dbLog.var("dbUser"));%>	
     		
     			<%
     			if(("ORACLE_WALLET").equals(connectionType)) {
@@ -301,9 +287,7 @@ skeleton="../templates/db_output_bulk.skeleton"
     			<%
     			}
     			%>
-        		<%if(isLog4jEnabled){%>
-        			log.info("<%=cid%> - Connection to '" + url_<%=cid%> + "' has succeeded.");
-        		<%}%>
+				<%dbLog.conn().connDone(dbLog.var("url"));%>
     	<%
     	if(specify_alias){
     	%>
@@ -318,9 +302,11 @@ skeleton="../templates/db_output_bulk.skeleton"
             conn_<%=cid%>.setAutoCommit(false);
             int commitEvery_<%=cid%> = <%=commitEvery%>;        
             int commitCounter_<%=cid%> = 0;        
-            <%
+        <%
         }
     }
+    
+    dbLog.commit().logAutoCommit("conn_"+cid+".getAutoCommit()");
     
     if (("true").equals(useBatchSize)) {
         if(!("").equals(batchSize)&&!("0").equals(batchSize)) {
@@ -498,15 +484,11 @@ skeleton="../templates/db_output_bulk.skeleton"
         		    // Close the temporary CLOB 
         		    tempClob.close();    
         		  } catch( java.sql.SQLException sqlexp){
-        		  	<%if(isLog4jEnabled){%>
-        		  		log.error("<%=cid %> - " + sqlexp.getMessage());
-        		  	<%}%>
+        		  	<%dbLog.logPrintedException("sqlexp.getMessage()");%>
         		    tempClob.freeTemporary(); 
         		    sqlexp.printStackTrace();
         		  } catch(java.lang.Exception exp){
-        		  	<%if(isLog4jEnabled){%>
-        		  		log.error("<%=cid %> - " + exp.getMessage());
-        		  	<%}%>
+        		  	<%dbLog.logPrintedException("exp.getMessage()");%>
         		    tempClob.freeTemporary(); 
         		    exp.printStackTrace();
         		  }

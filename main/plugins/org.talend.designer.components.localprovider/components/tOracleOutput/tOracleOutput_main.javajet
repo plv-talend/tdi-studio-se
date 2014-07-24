@@ -17,12 +17,13 @@ imports="
 	"
 skeleton="../templates/db_output_bulk.skeleton"
 %>
-
+	<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/Log4j/DBLogUtil.javajet"%>
 	<%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
-	
 	String cid = node.getUniqueName();
+	
+	dbLog = new DBLogUtil(node);
 	
 	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
     String dieOnError = ElementParameterParser.getValue(node, "__DIE_ON_ERROR__");
@@ -64,8 +65,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 	//feature:2880
     ((OracleManager)getManager(dbmsId, cid, node)).setDbVersion(dbVersion);
     boolean whereSupportNull = ElementParameterParser.getValue(node, "__SUPPORT_NULL_WHERE__").equals("true");
-    IProcess process = node.getProcess();
-    boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(process, "__LOG4J_ACTIVATE__"));
 	
 	String incomingConnName = null;
 	List<IMetadataColumn> columnList = getColumnList(node);
@@ -108,12 +107,6 @@ skeleton="../templates/db_output_bulk.skeleton"
 	List<Column> stmtStructure =  getManager(dbmsId, cid).createColumnList(columnList, useFieldOptions, fieldOptions, addCols);
 	isDynamic = isDynamic && !getManager(dbmsId, cid).isDynamicColumnReplaced();
 	IMetadataColumn talendDynCol = null;
-	if(isLog4jEnabled) {
-	%>
-		String dataOperationPrefix_<%=cid%> = "";
-		String dataOperationSuffix_<%=cid%> = "";
-	<%
-	}
 	
 	if(isDynamic) {
 	%>
@@ -218,21 +211,21 @@ skeleton="../templates/db_output_bulk.skeleton"
 					<%
 					//to fixed: bug8422
 					if(!(cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("talendMeter_DB"))){%>
-							pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
+						pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);
 					<%}%>
 							
 					<%
 					//to fixed: bug8422
 					if((cid.equals("talendLogs_DB") || cid.equals("talendStats_DB") || cid.equals("talendMeter_DB"))){ %>
-							pstmt_<%=cid %> = null;         
-							// [%connection%][psmt][tableName]
-							String keyPsmt_<%=cid %> = conn_<%=cid%> + "[psmt]" + "[" + <%=table%> + "]";
-							if(GlobalResource.resourceMap.get(keyPsmt_<%=cid %>)== null){
-								pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);		
-								GlobalResource.resourceMap.put(keyPsmt_<%=cid %>, pstmt_<%=cid %>);
-							}else{
-								pstmt_<%=cid %> = (java.sql.PreparedStatement)GlobalResource.resourceMap.get(keyPsmt_<%=cid %>);				
-							}
+						pstmt_<%=cid %> = null;         
+						// [%connection%][psmt][tableName]
+						String keyPsmt_<%=cid %> = conn_<%=cid%> + "[psmt]" + "[" + <%=table%> + "]";
+						if(GlobalResource.resourceMap.get(keyPsmt_<%=cid %>)== null){
+							pstmt_<%=cid %> = conn_<%=cid%>.prepareStatement(insert_<%=cid%>);		
+							GlobalResource.resourceMap.put(keyPsmt_<%=cid %>, pstmt_<%=cid %>);
+						}else{
+							pstmt_<%=cid %> = (java.sql.PreparedStatement)GlobalResource.resourceMap.get(keyPsmt_<%=cid %>);				
+						}
 					<%}%>
     				
     			<%
@@ -484,45 +477,31 @@ skeleton="../templates/db_output_bulk.skeleton"
     		<%
     		if (rejectConnName == null && isUseBatchByDBVersion && !useExistingConnection) { // modification one
     		%>
-    			<% if(isLog4jEnabled) { %>
-    				dataOperationPrefix_<%=cid%> = "Inserting";
-    			<% } %>
         		pstmt_<%=cid %>.addBatch();
         		nb_line_<%=cid%>++;    		 
-			
     		  	<%
     		  	if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
-    		  	%>
-    				<%	if(isLog4jEnabled) { %>
-    					dataOperationSuffix_<%=cid%> = " to the <%=dataAction%> batch";
-    					dataOperationPrefix_<%=cid%> = "Adding";
-    				<% } %>
+    		  		dbLog.data().addToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
+    		  		%>
 					batchSizeCounter_<%=cid%>++;
     		  	<%
+    		  	}else{
+    		  		dbLog.data().inserting(dbLog.var("nb_line"));
     		  	}
     		}else {    		
     		%>
                 try {
                     nb_line_<%=cid%>++;
-    				<%	if(isLog4jEnabled) { %>
-    					dataOperationPrefix_<%=cid%> = "Inserting";
-    				<% } %>
                     insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmt_<%=cid %>.executeUpdate();
+                    <%dbLog.data().inserting(dbLog.var("nb_line"));%>
                 } catch(java.lang.Exception e_<%=cid%>) {
                     whetherReject_<%=cid%> = true;
                     <%
                     if (("true").equals(dieOnError)) {
                     %>
-                    	<%if(isLog4jEnabled){%>
-    						log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-    					<%}%>
                         throw(e_<%=cid%>);
                     <%
                     } else {
-                    	if(isLog4jEnabled){%>
-    						log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-    					<%
-    					}
                     	if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
                         %>
                         	<%=rejectConnName %> = new <%=rejectConnName %>Struct();
@@ -538,7 +517,8 @@ skeleton="../templates/db_output_bulk.skeleton"
                         	<%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
                         <%
                     	} else {
-                        %>
+        					dbLog.logPrintedException("e_"+cid+".getMessage()");
+                        	%>
                         	System.err.print(e_<%=cid%>.getMessage());
                         <%
                     	}
@@ -641,45 +621,31 @@ skeleton="../templates/db_output_bulk.skeleton"
     		<%
     		if(rejectConnName == null && isUseBatchByDBVersion && !useExistingConnection) {
     		%>
-				<%	if(isLog4jEnabled) { %>
-					dataOperationPrefix_<%=cid%> = "Updating";
-				<% } %>
         		pstmt_<%=cid %>.addBatch();
         		nb_line_<%=cid%>++;
     			<%
     			if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
-    			%>
-					<%	if(isLog4jEnabled) { %>
-						dataOperationSuffix_<%=cid%> = " to the <%=dataAction%> batch";
-						dataOperationPrefix_<%=cid%> = "Adding";
-					<% } %>
+    				dbLog.data().addToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
+    				%>
     				batchSizeCounter_<%=cid%>++;
     			<%
+    			}else{
+    				dbLog.data().updating(dbLog.var("nb_line"));
     			}
     		}else {
     		%>
 				try {
                 	nb_line_<%=cid%>++;
-					<%	if(isLog4jEnabled) { %>
-						dataOperationPrefix_<%=cid%> = "Updating";
-					<% } %>
             	    updatedCount_<%=cid%> = updatedCount_<%=cid%> + pstmt_<%=cid %>.executeUpdate();
+            	    <%dbLog.data().updating(dbLog.var("nb_line"));%>
             	} catch(java.lang.Exception e_<%=cid%>) {
                 	whetherReject_<%=cid%> = true;
                 	<%
                 	if (("true").equals(dieOnError)) {
                 	%>
-                    	<%if(isLog4jEnabled){%>
-							log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%}%>
                     	throw(e_<%=cid%>);
                 	<%
                 	} else {
-                		if(isLog4jEnabled){
-                		%>
-							log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%
-						}
                     	if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
                         %>
                             <%=rejectConnName %> = new <%=rejectConnName %>Struct();
@@ -695,7 +661,8 @@ skeleton="../templates/db_output_bulk.skeleton"
                             <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
                         <%
                         } else {
-                        %>
+                    		dbLog.logPrintedException("e_"+cid+".getMessage()");
+                        	%>	
                             System.err.print(e_<%=cid%>.getMessage());
                         <%
                         }
@@ -825,26 +792,17 @@ skeleton="../templates/db_output_bulk.skeleton"
                 }                
     			%>
                 try {
-					<%	if(isLog4jEnabled) { %>
-						dataOperationPrefix_<%=cid%> = "Updating";
-					<% } %>
+        			nb_line_<%=cid%>++;
         			updatedCount_<%=cid%> = updatedCount_<%=cid%> + pstmtUpdate_<%=cid %>.executeUpdate();
+        			<%dbLog.data().updating(dbLog.var("nb_line"));%>
                 } catch(java.lang.Exception e_<%=cid%>) {
                     whetherReject_<%=cid%> = true;
                     <%
                     if (("true").equals(dieOnError)) {
                     %>
-                        <%if(isLog4jEnabled){%>
-							log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%}%>
                         throw(e_<%=cid%>);
                     <%
                     } else {
-                        if(isLog4jEnabled){
-                        %>
-							log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%
-						}
                         if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
                         %>
                             <%=rejectConnName %> = new <%=rejectConnName %>Struct();
@@ -860,7 +818,8 @@ skeleton="../templates/db_output_bulk.skeleton"
                             <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
                         <%
                         } else {
-                        %>
+                        	dbLog.logPrintedException("e_"+cid+".getMessage()");
+                        	%>
                             System.err.print(e_<%=cid%>.getMessage());
                         <%
                         }
@@ -909,26 +868,17 @@ skeleton="../templates/db_output_bulk.skeleton"
                 }                
     			%>
                 try {
-					<%	if(isLog4jEnabled) { %>
-						dataOperationPrefix_<%=cid%> = "Inserting";
-					<% } %>
+                    nb_line_<%=cid%>++;
                     insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmtInsert_<%=cid %>.executeUpdate();
+                    <%dbLog.data().inserting(dbLog.var("nb_line"));%>
                 } catch(java.lang.Exception e_<%=cid%>) {
                     whetherReject_<%=cid%> = true;
                     <%
                     if (("true").equals(dieOnError)) {
                     %>
-	                    <%if(isLog4jEnabled){%>
-							log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%}%>
                         throw(e_<%=cid%>);
                     <%
                     } else {
-	                    if(isLog4jEnabled){
-	                    %>
-							log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-						<%
-						}
                         if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
                         %>
                             <%=rejectConnName %> = new <%=rejectConnName %>Struct();
@@ -944,7 +894,8 @@ skeleton="../templates/db_output_bulk.skeleton"
                             <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
                         <%
                         } else {
-                        %>
+                        	dbLog.logPrintedException("e_"+cid+"getMessage()");
+                        	%>
                             System.err.print(e_<%=cid%>.getMessage());
                         <%
                         }
@@ -952,7 +903,6 @@ skeleton="../templates/db_output_bulk.skeleton"
                     %>
                 }
     		}
-    		nb_line_<%=cid%>++;
 		<%
     	} else if (("UPDATE_OR_INSERT").equals(dataAction)) {
 	    %>
@@ -1051,224 +1001,186 @@ skeleton="../templates/db_output_bulk.skeleton"
     		%>
     
             try {
-				<%	if(isLog4jEnabled) { %>
-					dataOperationPrefix_<%=cid%> = "Updating";
-				<% } %>
+                nb_line_<%=cid%>++;
                 updateFlag_<%=cid%> = pstmtUpdate_<%=cid %>.executeUpdate();
+                <%dbLog.data().updating(dbLog.var("nb_line"));%>
                 updatedCount_<%=cid%> = updatedCount_<%=cid%>+updateFlag_<%=cid%>;
-            if(updateFlag_<%=cid%> == 0) {
-            
-				<%
-            	if(isEnableDebug) {
-            	%>
-					query_<%=cid%> = new StringBuffer("");
-        		<%
-        		}
-        		int counter = 1;
-                for(Column column : colStruct) {
-                    if(column.isInsertable()) {
-                        String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());
-                        String dbType = column.getColumn().getType();
-						if( null == dbType) {
-							dbType="";
-						}
-                        %>
-                        <%=getManager(dbmsId, cid).generateSetStmt(typeToGenerate, dbType, column, counter, incomingConnName, cid, INSERT_TYPE)%>
-                        <%
-                        if(isEnableDebug) {
-                        %>
-                            query_<%=cid%> = <%=getManager(dbmsId, cid).retrieveSQL(typeToGenerate, column, incomingConnName, cid, "query_" , counter, "insertSQLSplits_")%>;
-                        <%
-                        }                        
-                        counter++;
-                    }
-                }
-				if(isDynamic) {
-					Column dynamicColumn = getColumn(talendDynCol);
-					String typeToGenerate = JavaTypesManager.getTypeToGenerate(dynamicColumn.getColumn().getTalendType(), dynamicColumn.getColumn().isNullable());
-					if("Dynamic".equals(typeToGenerate)) {
-						if(isEnableDebug) {
-						%>
-							routines.system.DynamicUtils.debugDynamicSql(query_<%=cid%>,<%=incomingConnName%>.<%=dynamicColumn.getName()%>, <%=counter%>,insertSQLSplits_<%=cid%>);
-            			<%
-    					}
-						%>
-						DynamicUtils.writeColumnsToDatabse(<%=incomingConnName%>.<%=dynamicColumn.getName()%>, pstmtInsert_<%=cid%>, <%=counter-1%>, "<%=dbmsId%>");
-					<%
-					}
-				}
-                if(isEnableDebug) {
-                %>
-                    globalMap.put("<%=cid %>_QUERY", query_<%=cid%>.toString().trim());
-                <%
-                }                
-        		%>
-				<%	if(isLog4jEnabled) { %>
-					dataOperationPrefix_<%=cid%> = "Inserting";
-				<% } %>
-                insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmtInsert_<%=cid %>.executeUpdate();
-			}
-        } catch(java.lang.Exception e_<%=cid%>) {
-            whetherReject_<%=cid%> = true;
-            <%
-            if (("true").equals(dieOnError)) {
-            %>
-                <%if(isLog4jEnabled){%>
-					log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-				<%}%>
-                throw(e_<%=cid%>);
-            <%
-            } else {
-                if(isLog4jEnabled){
-                %>
-					log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-				<%
-				}
-                if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
-                %>
-                    <%=rejectConnName %> = new <%=rejectConnName %>Struct();
-                    <%
-                    for(IMetadataColumn column : columnList) {
+                if(updateFlag_<%=cid%> == 0) {
+                
+    				<%
+                	if(isEnableDebug) {
                 	%>
-                    	<%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
-                    <%
+    					query_<%=cid%> = new StringBuffer("");
+            		<%
+            		}
+            		int counter = 1;
+                    for(Column column : colStruct) {
+                        if(column.isInsertable()) {
+                            String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());
+                            String dbType = column.getColumn().getType();
+    						if( null == dbType) {
+    							dbType="";
+    						}
+                            %>
+                            <%=getManager(dbmsId, cid).generateSetStmt(typeToGenerate, dbType, column, counter, incomingConnName, cid, INSERT_TYPE)%>
+                            <%
+                            if(isEnableDebug) {
+                            %>
+                                query_<%=cid%> = <%=getManager(dbmsId, cid).retrieveSQL(typeToGenerate, column, incomingConnName, cid, "query_" , counter, "insertSQLSplits_")%>;
+                            <%
+                            }                        
+                            counter++;
+                        }
                     }
-                    %>
-                    rejectedCount_<%=cid%> = rejectedCount_<%=cid%> + 1;
-                    <%=rejectConnName%>.errorCode = ((java.sql.SQLException)e_<%=cid%>).getSQLState();
-                    <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
-            	<%
-                } else {
-                %>
-                    System.err.print(e_<%=cid%>.getMessage());
-                <%
-                }
-            } 
-            %>
-        }
-        nb_line_<%=cid%>++;
-    <%
-	} else if (("DELETE").equals(dataAction)) {
-	    int keyCounter = 1;
-        for(Column column : colStruct) {
-            if(column.isDeleteKey()) {
-                String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());
-                String dbType = column.getColumn().getType();
-				if( null == dbType) {
-                	dbType="";
-                }
-                //#############for feature:2880 and 6980
-                if(whereSupportNull && column.getColumn().isNullable()) { %>
-                	<%=getManager(dbmsId, cid, node).generateSetBooleanForNullableKeyStmt(column, keyCounter, incomingConnName, cid, NORMAL_TYPE)%>
-	                <%  
+    				if(isDynamic) {
+    					Column dynamicColumn = getColumn(talendDynCol);
+    					String typeToGenerate = JavaTypesManager.getTypeToGenerate(dynamicColumn.getColumn().getTalendType(), dynamicColumn.getColumn().isNullable());
+    					if("Dynamic".equals(typeToGenerate)) {
+    						if(isEnableDebug) {
+    						%>
+    							routines.system.DynamicUtils.debugDynamicSql(query_<%=cid%>,<%=incomingConnName%>.<%=dynamicColumn.getName()%>, <%=counter%>,insertSQLSplits_<%=cid%>);
+                			<%
+        					}
+    						%>
+    						DynamicUtils.writeColumnsToDatabse(<%=incomingConnName%>.<%=dynamicColumn.getName()%>, pstmtInsert_<%=cid%>, <%=counter-1%>, "<%=dbmsId%>");
+    					<%
+    					}
+    				}
                     if(isEnableDebug) {
                     %>
-                        query_<%=cid%> = <%=getManager(dbmsId, cid).retrieveSQL(typeToGenerate, column, incomingConnName, cid, "query_" , keyCounter, "deleteSQLSplits_", "(("+incomingConnName+"."+column.getName()+"==null)?1:0)")%>;
+                        globalMap.put("<%=cid %>_QUERY", query_<%=cid%>.toString().trim());
                     <%
-                	}
-					keyCounter++;
-				}
-             	//#############                      
-                %>
-                <%=getManager(dbmsId, cid).generateSetStmt(typeToGenerate, dbType, column, keyCounter, incomingConnName, cid, NORMAL_TYPE)%>
-                <%
-                if(isEnableDebug) {
-                %>
-					query_<%=cid%> = <%=getManager(dbmsId, cid).retrieveSQL(typeToGenerate, column, incomingConnName, cid, "query_" , keyCounter, "deleteSQLSplits_")%>;
-                <%
-                }                    
-                keyCounter++;
-            }
-        }
-        if(isEnableDebug) {
-        %>
-            globalMap.put("<%=cid %>_QUERY", query_<%=cid%>.toString().trim());
-        <%
-        }            
-		if (rejectConnName == null && isUseBatchByDBVersion && !useExistingConnection) {
-    	%>
-			<%	if(isLog4jEnabled) { %>
-				dataOperationPrefix_<%=cid%> = "Deleting";
-			<% } %>
-    		pstmt_<%=cid %>.addBatch();
-			<%
-			if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
-    		%>
-				<%if(isLog4jEnabled) { %>
-        			dataOperationSuffix_<%=cid%> = " to the <%=dataAction%> batch";
-        			dataOperationPrefix_<%=cid%> = "Adding";
-			  	<% } %>
-    		  	batchSizeCounter_<%=cid%>++;
-			<%
-    		}
-		}else {
-		%>
-	        try {
-				<%	if(isLog4jEnabled) { %>
-					dataOperationPrefix_<%=cid%> = "Deleting";
-				<% } %>
-                deletedCount_<%=cid%> = deletedCount_<%=cid%> + pstmt_<%=cid %>.executeUpdate();
+                    }                
+            		%>
+                    nb_line_<%=cid%>++;
+                    insertedCount_<%=cid%> = insertedCount_<%=cid%> + pstmtInsert_<%=cid %>.executeUpdate();
+                    <%dbLog.data().inserting(dbLog.var("nb_line"));%>
+    			}
             } catch(java.lang.Exception e_<%=cid%>) {
                 whetherReject_<%=cid%> = true;
                 <%
                 if (("true").equals(dieOnError)) {
                 %>
-                    <%if(isLog4jEnabled){%>
-						log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-					<%}%>
                     throw(e_<%=cid%>);
                 <%
                 } else {
-		    		if(isLog4jEnabled){
-		    		%>
-		    			log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-					<%
-					}
                     if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
                     %>
                         <%=rejectConnName %> = new <%=rejectConnName %>Struct();
                         <%
                         for(IMetadataColumn column : columnList) {
-                        %>
-                            <%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
+                    	%>
+                        	<%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
                         <%
                         }
                         %>
                         rejectedCount_<%=cid%> = rejectedCount_<%=cid%> + 1;
                         <%=rejectConnName%>.errorCode = ((java.sql.SQLException)e_<%=cid%>).getSQLState();
                         <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
-                    <%
+                	<%
                     } else {
-                    %>
+                    	dbLog.logPrintedException("e_"+cid+".getMessage()");
+                    	%>
                         System.err.print(e_<%=cid%>.getMessage());
                     <%
                     }
                 } 
                 %>
-            }    		    		
-		<%
-		}
-		%>
-        nb_line_<%=cid%>++;
-	<%
-	}
-    	
-	if(isLog4jEnabled){
-		int count = 0;
-		for(IMetadataColumn column : columnList) {
-			count++;
-			%>
-                log4jSb_<%=cid%>.append(<%=incomingConnName%>.<%=column.getLabel()%>);
-                <%if(count < columnList.size()){%>
-                	log4jSb_<%=cid%>.append("|");
-                <%}
             }
+        <%
+    	} else if (("DELETE").equals(dataAction)) {
+    	    int keyCounter = 1;
+            for(Column column : colStruct) {
+                if(column.isDeleteKey()) {
+                    String typeToGenerate = JavaTypesManager.getTypeToGenerate(column.getColumn().getTalendType(), column.getColumn().isNullable());
+                    String dbType = column.getColumn().getType();
+    				if( null == dbType) {
+                    	dbType="";
+                    }
+                    //#############for feature:2880 and 6980
+                    if(whereSupportNull && column.getColumn().isNullable()) { %>
+                    	<%=getManager(dbmsId, cid, node).generateSetBooleanForNullableKeyStmt(column, keyCounter, incomingConnName, cid, NORMAL_TYPE)%>
+    	                <%  
+                        if(isEnableDebug) {
+                        %>
+                            query_<%=cid%> = <%=getManager(dbmsId, cid).retrieveSQL(typeToGenerate, column, incomingConnName, cid, "query_" , keyCounter, "deleteSQLSplits_", "(("+incomingConnName+"."+column.getName()+"==null)?1:0)")%>;
+                        <%
+                    	}
+    					keyCounter++;
+    				}
+                 	//#############                      
+                    %>
+                    <%=getManager(dbmsId, cid).generateSetStmt(typeToGenerate, dbType, column, keyCounter, incomingConnName, cid, NORMAL_TYPE)%>
+                    <%
+                    if(isEnableDebug) {
+                    %>
+    					query_<%=cid%> = <%=getManager(dbmsId, cid).retrieveSQL(typeToGenerate, column, incomingConnName, cid, "query_" , keyCounter, "deleteSQLSplits_")%>;
+                    <%
+                    }                    
+                    keyCounter++;
+                }
+            }
+            if(isEnableDebug) {
             %>
-			log.debug("<%=cid%> - " + dataOperationPrefix_<%=cid%> + " the record " + nb_line_<%=cid%> + dataOperationSuffix_<%=cid%> + ".");
-			log.trace("<%=cid%> - Content of the record " + nb_line_<%=cid%> + ": " + log4jSb_<%=cid%>);
-			log4jSb_<%=cid%>.delete(0,log4jSb_<%=cid%>.length());
-		<%
-		}
+                globalMap.put("<%=cid %>_QUERY", query_<%=cid%>.toString().trim());
+            <%
+            }            
+    		if (rejectConnName == null && isUseBatchByDBVersion && !useExistingConnection) {
+        	%>
+        		pstmt_<%=cid %>.addBatch();
+        		nb_line_<%=cid%>++;
+    			<%
+    			if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
+    				dbLog.data().addToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
+    	    		%>
+        		  	batchSizeCounter_<%=cid%>++;
+    			<%
+        		}else{
+    				dbLog.data().deleting(dbLog.var("nb_line"));
+    	   		}
+    		}else {
+    		%>
+    	        try {
+    	        	nb_line_<%=cid%>++;
+                    deletedCount_<%=cid%> = deletedCount_<%=cid%> + pstmt_<%=cid %>.executeUpdate();
+                    <%dbLog.data().deleting(dbLog.var("nb_line"));%>
+                } catch(java.lang.Exception e_<%=cid%>) {
+                    whetherReject_<%=cid%> = true;
+                    <%
+                    if (("true").equals(dieOnError)) {
+                    %>
+                        throw(e_<%=cid%>);
+                    <%
+                    } else {
+                        if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
+                        %>
+                            <%=rejectConnName %> = new <%=rejectConnName %>Struct();
+                            <%
+                            for(IMetadataColumn column : columnList) {
+                            %>
+                                <%=rejectConnName%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
+                            <%
+                            }
+                            %>
+                            rejectedCount_<%=cid%> = rejectedCount_<%=cid%> + 1;
+                            <%=rejectConnName%>.errorCode = ((java.sql.SQLException)e_<%=cid%>).getSQLState();
+                            <%=rejectConnName%>.errorMessage = e_<%=cid%>.getMessage() + " - Line: " + tos_count_<%=node.getUniqueName() %>;
+                        <%
+                        } else {
+                        	dbLog.logPrintedException("e_"+cid+".getMessage()");
+                        	%>
+                            System.err.print(e_<%=cid%>.getMessage());
+                        <%
+                        }
+                    } 
+                    %>
+                }    		    		
+    		<%
+    		}
+    	}
+	
+    	dbLog.traceData(incomingConnName, columnList, dbLog.var("nb_line"));
+    	
         if(outgoingConns != null && outgoingConns.size() > 0) {
     	%>
             if(!whetherReject_<%=cid%>) {
@@ -1276,14 +1188,13 @@ skeleton="../templates/db_output_bulk.skeleton"
                 for(IConnection outgoingConn : outgoingConns) {
                     if(rejectConnName == null || (rejectConnName != null && !outgoingConn.getName().equals(rejectConnName))) {
                         if(outgoingConn.getLineStyle().hasConnectionCategory(IConnectionCategory.DATA)) {
-                            
-                            %>
+                        %>
                             <%=outgoingConn.getName()%> = new <%=outgoingConn.getName()%>Struct();
                             <%
                             for(IMetadataColumn column : columnList) {
-                                %>
+                            %>
                                 <%=outgoingConn.getName()%>.<%=column.getLabel()%> = <%=incomingConnName%>.<%=column.getLabel()%>;
-                                <%                  
+                            <%                  
                             }
                         }
                     }
@@ -1299,33 +1210,24 @@ skeleton="../templates/db_output_bulk.skeleton"
                 %>                                                
     				if ( batchSize_<%=cid%> <= batchSizeCounter_<%=cid%>) {                
                     	try {
-    						<%	if(isLog4jEnabled) { %>
-    							log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
-    						<% } %>
+    						<%dbLog.batch().executeTry(dbLog.str(dataAction));%>
     						pstmt_<%=cid %>.executeBatch();
-    						<%	if(isLog4jEnabled) { %>
-    							log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
-    						<% } %>
+    						<%dbLog.batch().executeDone(dbLog.str(dataAction));%>
                     	}catch (java.sql.BatchUpdateException e_<%=cid%>){
                         	<%
                         	if(("true").equals(dieOnError)) {
                         	%>
-        						<%if(isLog4jEnabled){%>
-        							log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-        						<%}%>
                         		throw(e_<%=cid%>);
                         	<%
                         	}else {
-                        	%>
-        						<%if(isLog4jEnabled){%>
-        							log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-        						<%}%>
+                        		dbLog.logPrintedException("e_"+cid+".getMessage()");
+                        		%>
                         		System.err.println(e_<%=cid%>.getMessage());
                         	<%
                         	}
                         	%>
                 		}
-						tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();                	
+    					tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();                	
         	    		<%
         	    		if (("INSERT").equals(dataAction)) {
     	    			%>
@@ -1344,7 +1246,7 @@ skeleton="../templates/db_output_bulk.skeleton"
         	    		+= (tmp_batchUpdateCount_<%=cid%>!=-1?tmp_batchUpdateCount_<%=cid%>:0);                   	    	
         	    		batchSizeCounter_<%=cid%> = 0;             	                	                	
     				}
-	    		<%	
+        		<%	
     			}
     		}
     	}
@@ -1353,72 +1255,66 @@ skeleton="../templates/db_output_bulk.skeleton"
     	////////////commit every////////////
     	if(!useExistingConnection) {
     		if(!("").equals(commitEvery) && !("0").equals(commitEvery)) {
-		    %>
+    	    %>
     		    commitCounter_<%=cid%>++;            
                 if(commitEvery_<%=cid%> <= commitCounter_<%=cid%>) {
                 
-	                <%
-	                if ((rejectConnName==null && isUseBatchByDBVersion && !useExistingConnection) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction)) ) {
-	                %>
-		                try {
-							<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>
-								log.debug("<%=cid%> - Executing the <%=dataAction%> batch.");
-							<%}%>
-	                		pstmt_<%=cid %>.executeBatch();
-							<%if (isLog4jEnabled && ("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {%>
-								log.debug("<%=cid%> - The <%=dataAction%> batch execution has succeeded.");
-							<%}%>
-								
-		                }catch (java.sql.BatchUpdateException e_<%=cid%>){
-		                	<%
-		                	if(("true").equals(dieOnError)) {
-		                	%>
-								<%if(isLog4jEnabled){%>
-									log.fatal("<%=cid%> - " + e_<%=cid%>.getMessage());
-								<%}%>
-								throw(e_<%=cid%>);
-		                	<%
-		                	}else {
-		                	%>
-								<%if(isLog4jEnabled){%>
-									log.error("<%=cid%> - " + e_<%=cid%>.getMessage());
-								<%}%>
-		                        System.out.println(e_<%=cid%>.getMessage());
-		                	<%
-		                	}
-		                	%>
-		                }            	                              
-		        		tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();
-		    	    	<%
-		    	    	if (("INSERT").equals(dataAction)) {
-		    	    	%>
-		    	    		insertedCount_<%=cid%>
-		    	    	<%
-		    	    	}else if (("UPDATE").equals(dataAction)) {
-		    	    	%>            	    		
-		    	    		updatedCount_<%=cid%>
-		    	    	<%
-		    	    	}else if (("DELETE").equals(dataAction)) {
-		    	    	%>
-		    	    	    deletedCount_<%=cid%>
-		    	    	<%
-		    	    	}
-		    	    	%>     
-		    	    	+= (tmp_batchUpdateCount_<%=cid%>!=-1?tmp_batchUpdateCount_<%=cid%>:0);
-	                <%
-	                }
-	                %>
-					<%if(isLog4jEnabled){%>
-						log.debug("<%=cid%> - Starting to commit " + commitCounter_<%=cid%>+ " records.");
-					<%}%>
-		        	conn_<%=cid%>.commit();
-					<%if(isLog4jEnabled){%>
-						log.debug("<%=cid%> - Commit has succeeded.");
-					<%}%>                
-                	commitCounter_<%=cid%>=0;
-                }	
+                    <%
+                    if ((rejectConnName==null && isUseBatchByDBVersion && !useExistingConnection) && (("INSERT").equals(dataAction) || ("UPDATE").equals(dataAction) || ("DELETE").equals(dataAction)) ) {
+                    %>
+    	                try {
+    						<%
+    						if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
+	    						dbLog.batch().executeTry(dbLog.str(dataAction));
+    						}
+    						%>
+                    		pstmt_<%=cid %>.executeBatch();
+    						<%
+    						if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
+    							dbLog.batch().executeTry(dbLog.str(dataAction));
+    						}
+    						%>
+    	                }catch (java.sql.BatchUpdateException e_<%=cid%>){
+    	                	<%
+    	                	if(("true").equals(dieOnError)) {
+    	                	%>
+    							throw(e_<%=cid%>);
+    	                	<%
+    	                	}else {
+    	                		dbLog.logPrintedException("e_"+cid+".getMessage()");
+    	                		%>
+    	                        System.out.println(e_<%=cid%>.getMessage());
+    	                	<%
+    	                	}
+    	                	%>
+    	                }            	                              
+    	        		tmp_batchUpdateCount_<%=cid%> = pstmt_<%=cid %>.getUpdateCount();
+    	    	    	<%
+    	    	    	if (("INSERT").equals(dataAction)) {
+    	    	    	%>
+    	    	    		insertedCount_<%=cid%>
+    	    	    	<%
+    	    	    	}else if (("UPDATE").equals(dataAction)) {
+    	    	    	%>            	    		
+    	    	    		updatedCount_<%=cid%>
+    	    	    	<%
+    	    	    	}else if (("DELETE").equals(dataAction)) {
+    	    	    	%>
+    	    	    	    deletedCount_<%=cid%>
+    	    	    	<%
+    	    	    	}
+    	    	    	%>     
+    	    	    	+= (tmp_batchUpdateCount_<%=cid%>!=-1?tmp_batchUpdateCount_<%=cid%>:0);
+                    <%
+                    }
+                    %>
+    				<%dbLog.commit().commitTry(null, dbLog.var("commitCount"));%>
+    	        	conn_<%=cid%>.commit();
+    				<%dbLog.commit().commitDone(null);%>                
+    				commitCounter_<%=cid%>=0;
+    			}	
             <%
     		}
     	}
-    }
-    %>
+	}
+	%>
