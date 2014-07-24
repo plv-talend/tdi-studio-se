@@ -18,12 +18,14 @@ imports="
 skeleton="../templates/db_output_bulk.skeleton"
 %>
 <%@ include file="../templates/Log4j/Log4jDBConnUtil.javajet"%>
-
+<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/Log4j/DBLogUtil.javajet"%>
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
 	IProcess process = node.getProcess();
 	String cid = node.getUniqueName();
+	
+	dbLog = new DBLogUtil(node);
 	
 	String dataAction = ElementParameterParser.getValue(node,"__DATA_ACTION__");
 	String tableAction = ElementParameterParser.getValue(node,"__TABLE_ACTION__");

@@ -16,11 +16,12 @@ imports="
 " 
 skeleton="../templates/db_output_bulk.skeleton"
 %>
+<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/Log4j/DBLogUtil.javajet"%>
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
-	
 	String cid = node.getUniqueName();
+	dbLog = new DBLogUtil(node);
 	IProcess process = node.getProcess();
 	
 	String dbmsId = ElementParameterParser.getValue(node,"__MAPPING__");
