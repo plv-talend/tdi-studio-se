@@ -17,9 +17,9 @@ class DBConnLogUtil extends BasicLogUtil{
 	
 	public void connTry(String url, String dbUser){
 		if(dbUser != null){
-			info(str("Connection attempt to '"), url, str("' with the username '"), dbUser, str("'."));
+			info(str("Connection attempts to '"), url, str("' with the username '"), dbUser, str("'."));
 		}else{
-			info(str("Connection attempt to '"), url, str("'."));
+			info(str("Connection attempts to '"), url, str("'."));
 		}
 	}
 	
@@ -56,7 +56,7 @@ class DBTableActionLogUtil extends BasicLogUtil{
 	}
 	
 	public void dropTry(String tableName){
-		tableActionTry(tableName, str("Droping"));
+		tableActionTry(tableName, str("Dropping"));
 	}
 	
 	public void dropDone(String tableName){
@@ -121,9 +121,9 @@ class DBCommitLogUtil extends BasicLogUtil{
 		}else if(commitCount == null){
 			debug(str("Connection "), connCompID, str(" starting to commit."));	
 		}else if(connCompID == null){
-			debug(str("Connection starting to commit "), commitCount, str(" records."));
+			debug(str("Connection starting to commit "), commitCount, str(" record(s)."));
 		}else{
-			debug(str("Connection "), connCompID, str(" starting to commit "), commitCount, str(" records."));
+			debug(str("Connection "), connCompID, str(" starting to commit "), commitCount, str(" record(s)."));
 		}
 	}
 	
@@ -212,7 +212,7 @@ class DBStateLogUtil extends BasicLogUtil{
 	}
 	
 	private void logFinishedLines(String nbline, String action){
-		info(str("Has "), action, str(" "), nbline, str(" records."));
+		info(str("Has "), action, str(" "), nbline, str(" record(s)."));
 	}
 }	
 class DBLogUtil extends LogUtil{

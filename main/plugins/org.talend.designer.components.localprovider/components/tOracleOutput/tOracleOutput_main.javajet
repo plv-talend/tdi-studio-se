@@ -481,7 +481,7 @@ skeleton="../templates/db_output_bulk.skeleton"
         		nb_line_<%=cid%>++;    		 
     		  	<%
     		  	if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
-    		  		dbLog.data().addToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
+    		  		dbLog.data().addingToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
     		  		%>
 					batchSizeCounter_<%=cid%>++;
     		  	<%
@@ -625,7 +625,7 @@ skeleton="../templates/db_output_bulk.skeleton"
         		nb_line_<%=cid%>++;
     			<%
     			if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
-    				dbLog.data().addToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
+    				dbLog.data().addingToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
     				%>
     				batchSizeCounter_<%=cid%>++;
     			<%
@@ -1131,7 +1131,7 @@ skeleton="../templates/db_output_bulk.skeleton"
         		nb_line_<%=cid%>++;
     			<%
     			if (("true").equals(useBatchSize) && !("").equals(batchSize) && !("0").equals(batchSize)) {
-    				dbLog.data().addToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
+    				dbLog.data().addingToBatch(dbLog.var("nb_line"), dbLog.str(dataAction));
     	    		%>
         		  	batchSizeCounter_<%=cid%>++;
     			<%
@@ -1308,7 +1308,7 @@ skeleton="../templates/db_output_bulk.skeleton"
                     <%
                     }
                     %>
-    				<%dbLog.commit().commitTry(null, dbLog.var("commitCount"));%>
+    				<%dbLog.commit().commitTry(null, dbLog.var("commitCounter"));%>
     	        	conn_<%=cid%>.commit();
     				<%dbLog.commit().commitDone(null);%>                
     				commitCounter_<%=cid%>=0;

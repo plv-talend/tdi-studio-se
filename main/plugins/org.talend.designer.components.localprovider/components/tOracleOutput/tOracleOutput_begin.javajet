@@ -48,6 +48,7 @@ skeleton="../templates/db_output_bulk.skeleton"
     boolean createGeometryColumns = ("true").equals(ElementParameterParser.getValue(node,"__GEOMETRY_COLUMNS__"));
     
     dbLog.startWork();
+    dbLog.logCompSetting();
     
     if (useSpatialOptions) {
     	int targetSRID = -1;

@@ -64,7 +64,7 @@ imports="
 		dbLog.state().logInsertedLines(dbLog.var("nb_line_inserted"));
 		dbLog.state().logUpdatedLines(dbLog.var("nb_line_update"));
 	}
-	if(rejectConnName != null && rejectColumnList != null && rejectColumnList.size() > 0) {
+	if(rejectConnName != null) {
 		dbLog.state().logRejectedLines(dbLog.var("nb_line_rejected"));
 	}
 	%>

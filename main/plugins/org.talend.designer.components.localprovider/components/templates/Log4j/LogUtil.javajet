@@ -98,7 +98,8 @@ class LogUtil extends BasicLogUtil{
     		   		org.talend.core.model.process.EParameterFieldType.LABEL,
     		   		org.talend.core.model.process.EParameterFieldType.EXTERNAL,
     		   		org.talend.core.model.process.EParameterFieldType.MAPPING_TYPE,
-    		   		org.talend.core.model.process.EParameterFieldType.IMAGE)
+    		   		org.talend.core.model.process.EParameterFieldType.IMAGE,
+    		   		org.talend.core.model.process.EParameterFieldType.PASSWORD)
     	   	);
        		for(org.talend.core.model.process.IElementParameter ep : org.talend.core.model.utils.NodeUtil.getDisplayedParameters(node)){
        			if(ignoredParamsTypes.contains(ep.getFieldType())){
