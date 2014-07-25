@@ -126,31 +126,15 @@ class LogUtil extends BasicLogUtil{
     			String columnName = column.getLabel();
     			boolean isPrimit = org.talend.core.model.metadata.types.JavaTypesManager.isJavaPrimitiveType(column.getTalendType(), column.isNullable());
     			if(isPrimit){
-    				if(javaType == org.talend.core.model.metadata.types.JavaTypesManager.BYTE || javaType == org.talend.core.model.metadata.types.JavaTypesManager.SHORT){
-    				%>
-    					<%=var("log4jSb")%>.append(String.valueOf(<%=rowStruct%>.<%=columnName%>));
-    				<%
-    				}else{
-    				%>
-    					<%=var("log4jSb")%>.append(<%=rowStruct%>.<%=columnName%>);
-    				<%
-    				}
+   				%>
+					<%=var("log4jSb")%>.append(<%=rowStruct%>.<%=columnName%>);
+				<%
     			}else{
     			%>
     				if(<%=rowStruct%>.<%=columnName%> == null){
     					<%=var("log4jSb")%>.append("<null>");
     				}else{
-        				<%
-            			if(javaType == org.talend.core.model.metadata.types.JavaTypesManager.STRING){
-            			%>
-            				<%=var("log4jSb")%>.append(<%=rowStruct%>.<%=columnName%>);
-            			<%
-            			}else{
-            			%>
-            				<%=var("log4jSb")%>.append(String.valueOf(<%=rowStruct%>.<%=columnName%>));
-            			<%
-            			}
-            			%>
+        				<%=var("log4jSb")%>.append(<%=rowStruct%>.<%=columnName%>);
         			}	
         		<%
         		}
