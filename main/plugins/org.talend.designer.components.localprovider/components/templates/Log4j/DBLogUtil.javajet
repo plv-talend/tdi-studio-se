@@ -7,7 +7,7 @@ class DBConnLogUtil extends BasicLogUtil{
 	
 	private DBConnLogUtil(){}
 	
-	protected DBConnLogUtil(INode node){
+	protected DBConnLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 	}
 	
@@ -17,7 +17,7 @@ class DBConnLogUtil extends BasicLogUtil{
 	
 	public void connTry(String url, String dbUser){
 		if(dbUser != null){
-			info(str("Connection attempt to '"), url, str("' with the username '"), dbUser, str("."));
+			info(str("Connection attempt to '"), url, str("' with the username '"), dbUser, str("'."));
 		}else{
 			info(str("Connection attempt to '"), url, str("'."));
 		}
@@ -51,63 +51,63 @@ class DBConnLogUtil extends BasicLogUtil{
 class DBTableActionLogUtil extends BasicLogUtil{
 	private DBTableActionLogUtil(){}
 	
-	protected DBTableActionLogUtil(INode node){
+	protected DBTableActionLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 	}
 	
 	public void dropTry(String tableName){
-		tableActionTry("Droping", tableName);
+		tableActionTry(tableName, str("Droping"));
 	}
 	
 	public void dropDone(String tableName){
-		tableActionDone("Drop", tableName);
+		tableActionDone(tableName, str("Drop"));
 	}
 	
 	public void createTry(String tableName){
-		tableActionTry("Creating", tableName);
+		tableActionTry(tableName, str("Creating"));
 	}
 	
 	public void createDone(String tableName){
-		tableActionDone("Create", tableName);
+		tableActionDone(tableName, str("Create"));
 	}
 	
 	public void clearTry(String tableName){
-		tableActionTry("Clearing", tableName);
+		tableActionTry(tableName, str("Clearing"));
 	}
 	
 	public void clearDone(String tableName){
-		tableActionDone("Clear", tableName);
+		tableActionDone(tableName, str("Clear"));
 	}
 	
 	public void trancateTry(String tableName){
-		tableActionTry("Trancating", tableName);
+		tableActionTry(tableName, str("Trancating"));
 	}
 	
 	public void trancateDone(String tableName){
-		tableActionDone("Truncate", tableName);
+		tableActionDone(tableName, str("Truncate"));
 	}
 	
 	public void trancateReuseStorageTry(String tableName){
-		tableActionTry("Trancating reuse storage", tableName);
+		tableActionTry(tableName, str("Trancating reuse storage"));
 	}
 	
 	public void trancateReuseStorageDone(String tableName){
-		tableActionDone("Truncate reuse stroage", tableName);
+		tableActionDone(tableName, str("Truncate reuse stroage"));
 	}
 	
 	private void tableActionTry(String tableName, String action){
-		info(str(action + " table '"), tableName, str("'."));
+		info(action, str(" table '"), tableName, str("'."));
 	}
 	
 	private void tableActionDone(String tableName, String action){
-		info(str(action + " table '"), tableName, str("' has succeeded."));
+		info(action, str(" table '"), tableName, str("' has succeeded."));
 	}
 }
 
 class DBCommitLogUtil extends BasicLogUtil{
 	private DBCommitLogUtil(){}
 	
-	protected DBCommitLogUtil(INode node){
+	protected DBCommitLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 	}
 	
@@ -139,7 +139,7 @@ class DBCommitLogUtil extends BasicLogUtil{
 class DBBatchLogUtil extends BasicLogUtil{
 	private DBBatchLogUtil(){}
 	
-	protected DBBatchLogUtil(INode node){
+	protected DBBatchLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 	}
 	
@@ -155,7 +155,7 @@ class DBBatchLogUtil extends BasicLogUtil{
 class DBDataActionLogUtil extends BasicLogUtil{
 	private DBDataActionLogUtil(){}
 	
-	protected DBDataActionLogUtil(INode node){
+	protected DBDataActionLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 	}
 	
@@ -191,7 +191,7 @@ class DBDataActionLogUtil extends BasicLogUtil{
 class DBStateLogUtil extends BasicLogUtil{
 	private DBStateLogUtil(){}
 	
-	protected DBStateLogUtil(INode node){
+	protected DBStateLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 	}
 	
@@ -224,7 +224,7 @@ class DBLogUtil extends LogUtil{
 	DBStateLogUtil state = null;
 	private DBLogUtil(){}
 	
-	protected DBLogUtil(INode node){
+	protected DBLogUtil(org.talend.core.model.process.INode node){
 		super(node);
 		conn = new DBConnLogUtil(node);
     	table = new DBTableActionLogUtil(node);
@@ -258,5 +258,5 @@ class DBLogUtil extends LogUtil{
 		return state;
 	}
 }
-DBlogUtil dbLog = null;
+DBLogUtil dbLog = null;
 %>
