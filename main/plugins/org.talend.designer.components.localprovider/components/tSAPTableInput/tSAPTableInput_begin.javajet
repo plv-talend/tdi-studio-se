@@ -63,6 +63,8 @@
 	String startRowNumber = ElementParameterParser.getValue(node, "__START_ROW__");
 	String maxRowCount = ElementParameterParser.getValue(node, "__MAX_ROW_COUNT__");
 	
+	List<Map<String, String>> sapProps = (List<Map<String,String>>)ElementParameterParser.getObjectValue(node, "__SAP_PROPERTIES__");
+	
 	String passwordFieldName = "__PASSWORD__";
 %>
 	<%@ include file="@{org.talend.designer.components.localprovider}/components/templates/password.javajet"%>
@@ -80,6 +82,16 @@
     properties_<%=cid%>.put("jco.client.r3name", <%=systemId%>);
     properties_<%=cid%>.put("jco.client.group", <%=groupName%>);
     <%}%>
+    
+<%
+    if(sapProps!=null) {
+		for(Map<String, String> item : sapProps){
+%>
+		properties_<%=cid%>.put(<%=item.get("PROPERTY") %> ,<%=item.get("VALUE") %>);
+<% 
+		}
+    }
+%>
     
 	org.talend.sap.ISAPConnection connection_<%=cid%> = org.talend.sap.impl.SAPConnectionFactory.getInstance().createConnection(properties_<%=cid%>);
 	org.talend.sap.service.ISAPTableDataService dataService_<%=cid%> = connection_<%=cid%>.getTableDataService();
