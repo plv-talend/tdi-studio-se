@@ -21,6 +21,7 @@
 <%
 	CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
 	INode node = (INode)codeGenArgument.getArgument();
+	boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(node.getProcess(), "__LOG4J_ACTIVATE__"));
 	boolean containsTPartitioner = node.getProcess().getNodesOfType("tPartitioner").size() > 0 ? true : false;
 	String startNodeCid=node.getDesignSubjobStartNode().getUniqueName();
 	ECodePart codePart = codeGenArgument.getCodePart();
@@ -189,9 +190,16 @@
 		<%
 		}
 	}
-	%>
-
-	<%
+	Set<IConnection> connSetForLog =  new HashSet<IConnection>();
+	connSetForLog.addAll(node.getIncomingConnections(EConnectionType.FLOW_MAIN));
+	connSetForLog.addAll(node.getIncomingConnections(EConnectionType.FLOW_MERGE));
+	if((codePart.equals(ECodePart.MAIN))&isLog4jEnabled&connSetForLog.size()>0){
+		for(IConnection con:connSetForLog){
+		%>
+			log.trace("<%=con.getUniqueName()%> - " + <%=con.getUniqueName()%>.toLogString());
+		<%
+		}
+	}
 	if(codePart.equals(ECodePart.BEGIN)){ 
 	%>
 		int tos_count_<%=node.getUniqueName() %> = 0;

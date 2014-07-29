@@ -30,6 +30,7 @@
 	boolean isRunInMultiThread = codeGenArgument.getIsRunInMultiThread();
 	boolean stat = codeGenArgument.isStatistics();
 	boolean containsTPartitioner = subTree.getRootNode().getProcess().getNodesOfType("tPartitioner").size() > 0 ? true : false;
+    boolean isLog4jEnabled = ("true").equals(ElementParameterParser.getValue(subTree.getRootNode().getProcess(), "__LOG4J_ACTIVATE__"));
 %>
 
 <%
@@ -942,6 +943,38 @@ public static class <%=conn.getName() %>Struct<%=templateOrigin %> implements ro
 	    
 	    return sb.toString();
     }
+    <%if(isLog4jEnabled){%>
+        public String toLogString(){
+        	StringBuilder sb = new StringBuilder();	
+        	<%
+        	if (metadata !=null) {
+    			List<IMetadataColumn> columnList = metadata.getListColumns();
+        		for(IMetadataColumn column : columnList){
+        			JavaType javaType = JavaTypesManager.getJavaTypeFromId(column.getTalendType());
+        			String columnName = column.getLabel();
+        			boolean isPrimit = JavaTypesManager.isJavaPrimitiveType(column.getTalendType(), column.isNullable());
+        			if(isPrimit){
+        			%>
+        				sb.append(<%=columnName%>);
+        			<%
+        			}else{
+        			%>
+        				if(<%=columnName%> == null){
+        					sb.append("<null>");
+        				}else{
+            				sb.append(<%=columnName%>);
+            			}	
+            		<%
+            		}
+            		%>
+        			sb.append("|");
+        		<%
+        		}
+        	}
+        	%>
+        	return sb.toString();
+        }
+    <%}%>
     
     /** 
      * Compare keys
